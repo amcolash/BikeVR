@@ -8,3 +8,11 @@
     color: white;
     font-size: 48px;
 }
+
+body {
+    font-family: Monospace;
+    background-color: #101010;
+    color: #fff;
+    margin: 0px;
+    overflow: hidden;
+}

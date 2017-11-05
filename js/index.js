@@ -2,6 +2,7 @@ var scene;
 var camera;
 var renderer;
 var controls;
+var gamepad;
 
 var material;
 
@@ -75,14 +76,18 @@ function init3() {
     camera.fov = 100;
     camera.updateProjectionMatrix();
 
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(width, height);
+    renderer = new THREE.WebGLRenderer( { antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.vr.enabled = true;
 
-    controls = new THREE.OrbitControls(camera);
-    controls.enablePan = false;
-    controls.enableZoom = false;
-    controls.autoRotate = false;
-    controls.autoRotateSpeed = 0.5;
+    document.body.appendChild(WEBVR.createButton(renderer));
+
+    // controls = new THREE.OrbitControls(camera);
+    // controls.enablePan = false;
+    // controls.enableZoom = false;
+    // controls.autoRotate = false;
+    // controls.autoRotateSpeed = 0.5;
 
     material = new THREE.MeshBasicMaterial();
 
@@ -94,7 +99,14 @@ function init3() {
     sphere.scale.x = -1;
     scene.add(sphere);
 
-    renderer.setSize(window.innerWidth * 0.97, window.innerHeight * 0.97);
+    gamepad = new THREE.DaydreamController();
+    gamepad.position.set(0.1, 0, 0);
+    scene.add(gamepad);
+    
+    var gamepadHelper = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ linewidth: 4 }));
+    gamepadHelper.geometry.addAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, - 10], 3));
+    gamepad.add(gamepadHelper);
+
     document.body.appendChild(renderer.domElement);
 
     loadIndex(0);
@@ -132,7 +144,8 @@ function init() {
 
 function animate() {
     requestAnimationFrame(animate);
-    controls.update();
+    gamepad.update();
+    // controls.update();
     renderer.render(scene, camera);
 }
 
@@ -169,5 +182,13 @@ function checkKey(e) {
     }
 }
 
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+window.addEventListener('resize', onWindowResize, false);
 document.onkeydown = checkKey;
 window.onload = init;
