@@ -1,10 +1,9 @@
 var container;
-var camera, scene, ray, raycaster, renderer;
-var material;
+var scene, camera, renderer;
 
 var material;
 
-var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
+var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 2 });
 var hq = false;
 
 var roadIndex = 0;
@@ -74,6 +73,9 @@ function init() {
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 10);
     material = new THREE.MeshBasicMaterial();
 
+    camera.fov = 100;
+    camera.updateProjectionMatrix();
+
     var sphere = new THREE.Mesh(
         new THREE.SphereGeometry(10, 20, 20),
         material
@@ -86,6 +88,7 @@ function init() {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.vr.enabled = true;
+
     container.appendChild(renderer.domElement);
 
     document.body.appendChild(WEBVR.createButton(renderer));
@@ -127,14 +130,16 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-//
-
 function animate() {
     renderer.animate(render);
 }
 
 function render() {
-    // gamepad.update();
+    if (!('getVRDisplays' in navigator)) {
+        camera.rotation.y += 0.0003;
+        camera.updateProjectionMatrix();
+    }
+
     renderer.render(scene, camera);
 }
 
