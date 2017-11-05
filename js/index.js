@@ -1,8 +1,6 @@
-var scene;
-var camera;
-var renderer;
-var controls;
-var gamepad;
+var container;
+var camera, scene, ray, raycaster, renderer;
+var material;
 
 var material;
 
@@ -66,56 +64,31 @@ var road = [
     }
 ];
 
-function init3() {
+
+function init() {
+
+    container = document.createElement('div');
+    document.body.appendChild(container);
+
     scene = new THREE.Scene();
-
-    var width = window.innerWidth;
-    var height = window.innerHeight;
-    camera = new THREE.PerspectiveCamera(75, width / height, 1, 1000);
-    camera.position.x = 0.1;
-    camera.fov = 100;
-    camera.updateProjectionMatrix();
-
-    renderer = new THREE.WebGLRenderer( { antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.vr.enabled = true;
-
-    document.body.appendChild(WEBVR.createButton(renderer));
-
-    // controls = new THREE.OrbitControls(camera);
-    // controls.enablePan = false;
-    // controls.enableZoom = false;
-    // controls.autoRotate = false;
-    // controls.autoRotateSpeed = 0.5;
-
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 10);
     material = new THREE.MeshBasicMaterial();
 
     var sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(100, 20, 20),
+        new THREE.SphereGeometry(10, 20, 20),
         material
     );
 
     sphere.scale.x = -1;
     scene.add(sphere);
 
-    gamepad = new THREE.DaydreamController();
-    gamepad.position.set(0.1, 0, 0);
-    scene.add(gamepad);
-    
-    var gamepadHelper = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ linewidth: 4 }));
-    gamepadHelper.geometry.addAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, - 10], 3));
-    gamepad.add(gamepadHelper);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.vr.enabled = true;
+    container.appendChild(renderer.domElement);
 
-    document.body.appendChild(renderer.domElement);
-
-    loadIndex(0);
-
-    animate();
-}
-
-function init() {
-    init3();
+    document.body.appendChild(WEBVR.createButton(renderer));
 
     _panoLoader.onPanoramaLoad = function () {
 
@@ -124,11 +97,11 @@ function init() {
 
         var image = new Image();
         image.onload = function () {
-            
+
             texture.image = image;
             texture.minFilter = THREE.LinearFilter;
             texture.needsUpdate = true;
-            
+
             material.needsUpdate = true;
             material.map = texture;
             material.map.needsUpdate = true;
@@ -140,12 +113,28 @@ function init() {
 
         image.src = this.canvas.toDataURL();
     };
+
+    window.addEventListener('resize', onWindowResize, false);
+    document.onkeydown = checkKey;
+
+    loadIndex(0);
 }
 
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+//
+
 function animate() {
-    requestAnimationFrame(animate);
-    gamepad.update();
-    // controls.update();
+    renderer.animate(render);
+}
+
+function render() {
+    // gamepad.update();
     renderer.render(scene, camera);
 }
 
@@ -172,7 +161,7 @@ function increment(positive) {
 
 function checkKey(e) {
     e = e || window.event;
-    
+
     if (e.keyCode == '38') {
         // Up Arrow
         increment(true);
@@ -182,13 +171,6 @@ function checkKey(e) {
     }
 }
 
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-window.addEventListener('resize', onWindowResize, false);
-document.onkeydown = checkKey;
-window.onload = init;
+init();
+animate();
