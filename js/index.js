@@ -6,6 +6,9 @@ var material;
 var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 2 });
 var hq = false;
 
+var _depthLoader = new GSVPANO.PanoDepthLoader();
+var canvas = document.createElement("canvas");
+
 var roadIndex = 0;
 
 var road = [
@@ -63,25 +66,32 @@ var road = [
     }
 ];
 
+function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+};
+
+function hasVR() {
+    return ('getVRDisplays' in navigator);
+}
 
 function init() {
-
     container = document.createElement('div');
     document.body.appendChild(container);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 10);
-    material = new THREE.MeshBasicMaterial();
-
-    camera.fov = 100;
-    camera.updateProjectionMatrix();
+    camera = new THREE.PerspectiveCamera(120, window.innerWidth / window.innerHeight, 0.01, 100);
+    
+    var light = new THREE.AmbientLight(0xffffff); // soft white light
+    scene.add(light);
+    
+    material = new THREE.MeshPhongMaterial();
+    material.side = THREE.DoubleSide;
 
     var sphere = new THREE.Mesh(
         new THREE.SphereGeometry(10, 20, 20),
         material
     );
 
-    sphere.scale.x = -1;
     scene.add(sphere);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -93,7 +103,18 @@ function init() {
 
     document.body.appendChild(WEBVR.createButton(renderer));
 
+    initPano();
+
+    window.addEventListener('resize', onWindowResize, false);
+    document.onkeydown = checkKey;
+
+    loadIndex(0);
+}
+
+function initPano() {
+
     _panoLoader.onPanoramaLoad = function () {
+        _depthLoader.load(this.panoId);
 
         // Connect the image to the Texture
         var texture = new THREE.Texture();
@@ -105,22 +126,61 @@ function init() {
             texture.minFilter = THREE.LinearFilter;
             texture.needsUpdate = true;
 
-            material.needsUpdate = true;
             material.map = texture;
+            material.needsUpdate = true;
             material.map.needsUpdate = true;
 
-            console.log("loading complete");
-
-            document.getElementById("loading").style.display = "none";
+            console.log("loading pano complete");
         };
 
         image.src = this.canvas.toDataURL();
     };
 
-    window.addEventListener('resize', onWindowResize, false);
-    document.onkeydown = checkKey;
 
-    loadIndex(0);
+    _depthLoader.onDepthLoad = function () {
+        var x, y, context, image, w, h, c;
+
+        context = canvas.getContext('2d');
+
+        w = this.depthMap.width;
+        h = this.depthMap.height;
+
+        canvas.setAttribute('width', w);
+        canvas.setAttribute('height', h);
+
+        image = context.getImageData(0, 0, w, h);
+
+        for (y = 0; y < h; ++y) {
+            for (x = 0; x < w; ++x) {
+                c = this.depthMap.depthMap[y * w + x] / 50 * 255;
+                image.data[4 * (y * w + x)] = c;
+                image.data[4 * (y * w + x) + 1] = c;
+                image.data[4 * (y * w + x) + 2] = c;
+                image.data[4 * (y * w + x) + 3] = 255;
+            }
+        }
+
+        // Connect the image to the Texture
+        var texture = new THREE.Texture();
+        texture.image = image;
+        texture.minFilter = THREE.LinearFilter;
+        texture.needsUpdate = true;
+
+        // material.map = texture;
+
+        material.displacementMap = texture;
+        material.displacementScale = -1;
+
+        material.needsUpdate = true;
+        material.map.needsUpdate = true;
+
+        console.log("loading depth complete");
+
+        document.getElementById("loading").style.display = "none";
+
+        // material.wireframe = true;
+        // material.wireframeLinewidth = 5;
+    };
 }
 
 function onWindowResize() {
@@ -135,11 +195,6 @@ function animate() {
 }
 
 function render() {
-    if (!('getVRDisplays' in navigator)) {
-        camera.rotation.y += 0.0003;
-        camera.updateProjectionMatrix();
-    }
-
     renderer.render(scene, camera);
 }
 
@@ -167,13 +222,35 @@ function increment(positive) {
 function checkKey(e) {
     e = e || window.event;
 
-    if (e.keyCode == '38') {
+    if (e.keyCode == '37') {
+        // Left Arrow
+        camera.rotation.y += 0.1;
+    } else if (e.keyCode == '38') {
         // Up Arrow
-        increment(true);
+        // increment(true);
+        camera.translateZ(-1);
+    } else if (e.keyCode == '39') {
+        // Right Arrow
+        camera.rotation.y -= 0.1;
     } else if (e.keyCode == '40') {
         // Down Arrow
-        increment(false);
+        // increment(false);
+        camera.translateZ(1);
     }
+
+    // var maxRadius = 8;
+    // var len = Math.len
+    // var maxX = Math.cos(camera.rotation.y) * max;
+    // var maxZ = Math.sin(camera.rotation.y) * max;
+
+    // camera.position.x = clamp(camera.position.x, -maxX, maxX);
+    // camera.position.z = clamp(camera.position.z, -maxZ, maxZ);
+
+    camera.position.clampLength(-8, 8);
+
+    camera.updateProjectionMatrix();
+
+    // console.log(camera.position);
 }
 
 
