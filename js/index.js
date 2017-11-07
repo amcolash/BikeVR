@@ -1,10 +1,12 @@
 var container;
-var scene, camera, renderer;
+var scene, camera, renderer, controls;
 
 var material;
 
-var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 2 });
+var radius = 270;
+
 var hq = false;
+var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
 
 var _depthLoader = new GSVPANO.PanoDepthLoader();
 var canvas = document.createElement("canvas");
@@ -79,20 +81,35 @@ function init() {
     document.body.appendChild(container);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(120, window.innerWidth / window.innerHeight, 0.01, 100);
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, radius * 3);
     
+    if (!hasVR()) {
+        controls = new THREE.PointerLockControls(camera);
+        scene.add(controls.getObject());
+        controls.enabled = true;
+
+        document.addEventListener('click', function (event) {
+            // Ask the browser to lock the pointer
+            document.body.requestPointerLock();
+        }, false);
+    }
+
     var light = new THREE.AmbientLight(0xffffff); // soft white light
     scene.add(light);
     
-    material = new THREE.MeshPhongMaterial();
-    material.side = THREE.DoubleSide;
+    material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
 
     var sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(10, 20, 20),
+        new THREE.SphereGeometry(radius, 32, 33),
         material
     );
-
     scene.add(sphere);
+
+    var origin = new THREE.Mesh(
+        new THREE.SphereGeometry(10, 20, 20),
+        new THREE.MeshBasicMaterial()
+    );
+    scene.add(origin);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -114,6 +131,8 @@ function init() {
 function initPano() {
 
     _panoLoader.onPanoramaLoad = function () {
+        console.log(this);
+
         _depthLoader.load(this.panoId);
 
         // Connect the image to the Texture
@@ -126,9 +145,9 @@ function initPano() {
             texture.minFilter = THREE.LinearFilter;
             texture.needsUpdate = true;
 
-            material.map = texture;
-            material.needsUpdate = true;
-            material.map.needsUpdate = true;
+            // material.map = texture;
+            // material.needsUpdate = true;
+            // material.map.needsUpdate = true;
 
             console.log("loading pano complete");
         };
@@ -142,6 +161,8 @@ function initPano() {
 
         context = canvas.getContext('2d');
 
+        console.log(this.depthMap);
+
         w = this.depthMap.width;
         h = this.depthMap.height;
 
@@ -150,15 +171,65 @@ function initPano() {
 
         image = context.getImageData(0, 0, w, h);
 
+        var geometry = new THREE.BufferGeometry();
+
+        var verts = new Float32Array(w * h * 3);
+        var colors = new Float32Array(w * h * 3);
+        var vec3verts = [];
+
         for (y = 0; y < h; ++y) {
             for (x = 0; x < w; ++x) {
                 c = this.depthMap.depthMap[y * w + x] / 50 * 255;
+                c = clamp(c, 0, 256);
+                
                 image.data[4 * (y * w + x)] = c;
                 image.data[4 * (y * w + x) + 1] = c;
                 image.data[4 * (y * w + x) + 2] = c;
                 image.data[4 * (y * w + x) + 3] = 255;
+
+                var xnormalize = (w - x - 1) / (w - 1);
+                var ynormalize = (h - y - 1) / (h - 1);
+                var theta = xnormalize * (2 * Math.PI) + (Math.PI / 2);
+                var phi = ynormalize * Math.PI;
+
+                var tmpX = c * Math.sin(phi) * Math.cos(theta);
+                var tmpY = c * Math.sin(phi) * Math.sin(theta);
+                var tmpZ = c * Math.cos(phi);
+
+                var vector = new THREE.Vector3(tmpX, tmpY, tmpZ);
+                vector.clampLength(-radius, radius);
+
+                verts[3 * (y * w + x) + 0] = tmpX;
+                verts[3 * (y * w + x) + 1] = tmpY;
+                verts[3 * (y * w + x) + 2] = tmpZ;
+
+                colors[3 * (y * w + x) + 0] = c / 255;
+                colors[3 * (y * w + x) + 1] = c / 255;
+                colors[3 * (y * w + x) + 2] = c / 255;
+
+                vec3verts.push(vector);
             }
         }
+
+        geometry.addAttribute('position', new THREE.BufferAttribute(verts, 3));
+        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.computeBoundingBox();
+
+        // var mesh = new THREE.Mesh(
+        //     new THREE.ConvexGeometry(vec3verts),
+        //     new THREE.MeshBasicMaterial( {side: THREE.DoubleSide, color: 0xff0000} )
+        // );
+
+        // TODO: MESH
+
+        var mesh = new THREE.Points(
+            geometry,
+            new THREE.PointsMaterial({ vertexColors: THREE.VertexColors })
+        );
+
+        // Rotate the mesh (since I don't math)
+        mesh.rotation.x = (Math.PI / 2);
+        scene.add(mesh);
 
         // Connect the image to the Texture
         var texture = new THREE.Texture();
@@ -168,11 +239,11 @@ function initPano() {
 
         // material.map = texture;
 
-        material.displacementMap = texture;
-        material.displacementScale = -1;
+        // material.displacementMap = texture;
+        // material.displacementScale = -1;
 
-        material.needsUpdate = true;
-        material.map.needsUpdate = true;
+        // material.needsUpdate = true;
+        // material.map.needsUpdate = true;
 
         console.log("loading depth complete");
 
@@ -192,6 +263,13 @@ function onWindowResize() {
 
 function animate() {
     renderer.animate(render);
+
+    var delta = 1/60;
+    var velocity = 30;
+
+    // controls.getObject().translateX(velocity * delta);
+    // controls.getObject().translateY(velocity * delta);
+    // controls.getObject().translateZ(velocity * delta);
 }
 
 function render() {
@@ -206,51 +284,50 @@ function loadIndex(i) {
     _panoLoader.load(new google.maps.LatLng(lat, long));
 }
 
-function increment(positive) {
-    if (positive) {
-        roadIndex++;
-    } else {
-        roadIndex--;
-        if (roadIndex < 0) roadIndex += road.length;
-    }
-
-    roadIndex = roadIndex % road.length;
-
+function increment() {
+    roadIndex = (roadIndex + 1) % road.length;
     loadIndex(roadIndex);
 }
 
 function checkKey(e) {
     e = e || window.event;
 
+    var speed = 5;
+
     if (e.keyCode == '37') {
         // Left Arrow
         camera.rotation.y += 0.1;
     } else if (e.keyCode == '38') {
         // Up Arrow
-        // increment(true);
-        camera.translateZ(-1);
+        // camera.translateZ(-1);
+        camera.rotation.x += 0.1;
     } else if (e.keyCode == '39') {
         // Right Arrow
         camera.rotation.y -= 0.1;
     } else if (e.keyCode == '40') {
         // Down Arrow
-        // increment(false);
-        camera.translateZ(1);
+        // camera.translateZ(1);
+        camera.rotation.x -= 0.1;
+    } else if (e.keyCode == '82') {
+        // 'R'
+        camera.position.set(0, 0, 0);
+        camera.rotation.set(0, 0, 0);
+    } else if (e.keyCode == '87') {
+        // W
+        camera.translateZ(-speed);
+    } else if (e.keyCode == '65') {
+        // A
+        camera.translateX(-speed);
+    } else if (e.keyCode == '83') {
+        // S
+        camera.translateZ(speed);
+    } else if (e.keyCode == '68') {
+        // D
+        camera.translateX(speed);
     }
 
-    // var maxRadius = 8;
-    // var len = Math.len
-    // var maxX = Math.cos(camera.rotation.y) * max;
-    // var maxZ = Math.sin(camera.rotation.y) * max;
-
-    // camera.position.x = clamp(camera.position.x, -maxX, maxX);
-    // camera.position.z = clamp(camera.position.z, -maxZ, maxZ);
-
-    camera.position.clampLength(-8, 8);
-
+    camera.position.clampLength(-radius * 0.9, radius * 0.9);
     camera.updateProjectionMatrix();
-
-    // console.log(camera.position);
 }
 
 
