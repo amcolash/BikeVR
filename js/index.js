@@ -5,7 +5,7 @@ var material;
 
 var radius = 270;
 
-var hq = false;
+var hq = true;
 var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
 
 var _depthLoader = new GSVPANO.PanoDepthLoader();
@@ -83,9 +83,10 @@ function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, radius * 3);
     
+    controls = new THREE.PointerLockControls(camera);
+    scene.add(controls.getObject());
+    
     if (!hasVR()) {
-        controls = new THREE.PointerLockControls(camera);
-        scene.add(controls.getObject());
         controls.enabled = true;
 
         document.addEventListener('click', function (event) {
@@ -94,20 +95,20 @@ function init() {
         }, false);
     }
 
-    var light = new THREE.AmbientLight(0xffffff); // soft white light
+    var light = new THREE.AmbientLight(0xffffff);
     scene.add(light);
     
-    material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+    material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
 
     var sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(radius, 32, 33),
+        new THREE.SphereGeometry(radius, 32, 32),
         material
     );
-    scene.add(sphere);
+    // scene.add(sphere);
 
     var origin = new THREE.Mesh(
-        new THREE.SphereGeometry(10, 20, 20),
-        new THREE.MeshBasicMaterial()
+        new THREE.SphereGeometry(5, 20, 20),
+        new THREE.MeshBasicMaterial({ color: 0x555555 })
     );
     scene.add(origin);
 
@@ -145,9 +146,9 @@ function initPano() {
             texture.minFilter = THREE.LinearFilter;
             texture.needsUpdate = true;
 
-            // material.map = texture;
-            // material.needsUpdate = true;
-            // material.map.needsUpdate = true;
+            material.map = texture;
+            material.needsUpdate = true;
+            material.map.needsUpdate = true;
 
             console.log("loading pano complete");
         };
@@ -171,11 +172,10 @@ function initPano() {
 
         image = context.getImageData(0, 0, w, h);
 
-        var geometry = new THREE.BufferGeometry();
+        var verts = [];
+        var colors = [];
 
-        var verts = new Float32Array(w * h * 3);
-        var colors = new Float32Array(w * h * 3);
-        var vec3verts = [];
+        var plane = new THREE.PlaneGeometry(50, 50, w - 1, h - 1);
 
         for (y = 0; y < h; ++y) {
             for (x = 0; x < w; ++x) {
@@ -189,47 +189,34 @@ function initPano() {
 
                 var xnormalize = (w - x - 1) / (w - 1);
                 var ynormalize = (h - y - 1) / (h - 1);
-                var theta = xnormalize * (2 * Math.PI) + (Math.PI / 2);
+                var theta = xnormalize * (2 * Math.PI);
                 var phi = ynormalize * Math.PI;
 
                 var tmpX = c * Math.sin(phi) * Math.cos(theta);
                 var tmpY = c * Math.sin(phi) * Math.sin(theta);
                 var tmpZ = c * Math.cos(phi);
 
-                var vector = new THREE.Vector3(tmpX, tmpY, tmpZ);
-                vector.clampLength(-radius, radius);
-
-                verts[3 * (y * w + x) + 0] = tmpX;
-                verts[3 * (y * w + x) + 1] = tmpY;
-                verts[3 * (y * w + x) + 2] = tmpZ;
-
-                colors[3 * (y * w + x) + 0] = c / 255;
-                colors[3 * (y * w + x) + 1] = c / 255;
-                colors[3 * (y * w + x) + 2] = c / 255;
-
-                vec3verts.push(vector);
+                plane.vertices[y * w + x].set(tmpX, tmpY, tmpZ);
             }
         }
 
-        geometry.addAttribute('position', new THREE.BufferAttribute(verts, 3));
-        geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geometry.computeBoundingBox();
-
-        // var mesh = new THREE.Mesh(
-        //     new THREE.ConvexGeometry(vec3verts),
-        //     new THREE.MeshBasicMaterial( {side: THREE.DoubleSide, color: 0xff0000} )
-        // );
-
-        // TODO: MESH
-
-        var mesh = new THREE.Points(
-            geometry,
-            new THREE.PointsMaterial({ vertexColors: THREE.VertexColors })
+        var mesh = new THREE.Mesh(
+            plane,
+            material
         );
 
         // Rotate the mesh (since I don't math)
         mesh.rotation.x = (Math.PI / 2);
         scene.add(mesh);
+
+        // var points = new THREE.Points(
+            // plane,
+            // new THREE.PointsMaterial({ vertexColors: THREE.VertexColors }) // vertex colors not working right now :(
+        // );
+
+        // Rotate the mesh (since I don't math)
+        // points.rotation.x = (Math.PI / 2);
+        // scene.add(points);
 
         // Connect the image to the Texture
         var texture = new THREE.Texture();
@@ -238,10 +225,6 @@ function initPano() {
         texture.needsUpdate = true;
 
         // material.map = texture;
-
-        // material.displacementMap = texture;
-        // material.displacementScale = -1;
-
         // material.needsUpdate = true;
         // material.map.needsUpdate = true;
 
@@ -263,13 +246,6 @@ function onWindowResize() {
 
 function animate() {
     renderer.animate(render);
-
-    var delta = 1/60;
-    var velocity = 30;
-
-    // controls.getObject().translateX(velocity * delta);
-    // controls.getObject().translateY(velocity * delta);
-    // controls.getObject().translateZ(velocity * delta);
 }
 
 function render() {
