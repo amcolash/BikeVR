@@ -1,75 +1,29 @@
 var container;
 var scene, camera, renderer, controls;
-
-var material;
+var sphere, mesh, material;
 
 var radius = 270;
 
-var hq = true;
+var hq = false;
 var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
-
 var _depthLoader = new GSVPANO.PanoDepthLoader();
-var canvas = document.createElement("canvas");
 
-var roadIndex = 0;
+var drawPoints = false;
 
-var road = [
-    {
-        "latitude": -35.2784167,
-        "longitude": 149.1294692
-    },
-    {
-        "latitude": -35.280321693840129,
-        "longitude": 149.12908274880189
-    },
-    {
-        "latitude": -35.2803415,
-        "longitude": 149.1290788
-    },
-    {
-        "latitude": -35.2803415,
-        "longitude": 149.1290788
-    },
-    {
-        "latitude": -35.280451499999991,
-        "longitude": 149.1290784
-    },
-    {
-        "latitude": -35.2805167,
-        "longitude": 149.1290879
-    },
-    {
-        "latitude": -35.2805901,
-        "longitude": 149.1291104
-    },
-    {
-        "latitude": -35.2805901,
-        "longitude": 149.1291104
-    },
-    {
-        "latitude": -35.280734599999995,
-        "longitude": 149.1291517
-    },
-    {
-        "latitude": -35.2807852,
-        "longitude": 149.1291716
-    },
-    {
-        "latitude": -35.2808499,
-        "longitude": 149.1292099
-    },
-    {
-        "latitude": -35.280960897210818,
-        "longitude": 149.1293250692261
-    },
-    {
-        "latitude": -35.284728724835304,
-        "longitude": 149.12835061713685
-    }
-];
+// need to unload these with renderer.deallocateTexture(texture);
+var panoramas = [];
+var depthMaps = [];
+
+var currentLoaded = 0;
+var currentSphere = 0;
 
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
+};
+
+assert = function (cond, text) {
+    console.assert(cond, text);
+    return cond;
 };
 
 function hasVR() {
@@ -85,32 +39,6 @@ function init() {
     
     controls = new THREE.PointerLockControls(camera);
     scene.add(controls.getObject());
-    
-    if (!hasVR()) {
-        controls.enabled = true;
-
-        document.addEventListener('click', function (event) {
-            // Ask the browser to lock the pointer
-            document.body.requestPointerLock();
-        }, false);
-    }
-
-    var light = new THREE.AmbientLight(0xffffff);
-    scene.add(light);
-    
-    material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
-
-    var sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(radius, 32, 32),
-        material
-    );
-    // scene.add(sphere);
-
-    var origin = new THREE.Mesh(
-        new THREE.SphereGeometry(5, 20, 20),
-        new THREE.MeshBasicMaterial({ color: 0x555555 })
-    );
-    scene.add(origin);
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -118,39 +46,66 @@ function init() {
     renderer.vr.enabled = true;
 
     container.appendChild(renderer.domElement);
+    
+    // Hardcoded width/height since we always get the same sized depth map, assert in updating geo
+    // Using a place since it is easy to make and has the UVs I am looking for
+    sphere = new THREE.PlaneGeometry(50, 50, 512 - 1, 256 - 1);
+    material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
 
-    document.body.appendChild(WEBVR.createButton(renderer));
+    mesh = new THREE.Mesh(
+        sphere,
+        material
+    );
 
-    initPano();
+    // Rotate the mesh (since I don't math)
+    mesh.rotation.x = (Math.PI / 2);
+    scene.add(mesh);
+    
+    var light = new THREE.AmbientLight(0xffffff);
+    scene.add(light);
 
+    var origin = new THREE.Mesh(
+        new THREE.SphereGeometry(5, 20, 20),
+        new THREE.MeshBasicMaterial({ color: 0x555555 })
+    );
+    scene.add(origin);
+
+    if (!hasVR()) {
+        controls.enabled = true;
+
+        document.addEventListener('click', function (event) {
+            // Ask the browser to lock the pointer
+            document.body.requestPointerLock();
+        }, false);
+
+        document.body.appendChild(WEBVR.createButton(renderer));
+    }
+    
     window.addEventListener('resize', onWindowResize, false);
     document.onkeydown = checkKey;
+    
+    initListeners();
 
-    loadIndex(0);
+    loadIndex(currentLoaded);
 }
 
-function initPano() {
+function initListeners() {
 
     _panoLoader.onPanoramaLoad = function () {
-        console.log(this);
-
+        // Start loading depth map immediately
         _depthLoader.load(this.panoId);
 
         // Connect the image to the Texture
         var texture = new THREE.Texture();
 
+        // cache the texture
+        panoramas[this.panoId] = texture;
+
         var image = new Image();
         image.onload = function () {
-
             texture.image = image;
             texture.minFilter = THREE.LinearFilter;
             texture.needsUpdate = true;
-
-            material.map = texture;
-            material.needsUpdate = true;
-            material.map.needsUpdate = true;
-
-            console.log("loading pano complete");
         };
 
         image.src = this.canvas.toDataURL();
@@ -158,83 +113,87 @@ function initPano() {
 
 
     _depthLoader.onDepthLoad = function () {
-        var x, y, context, image, w, h, c;
+        // cache the depth map
+        depthMaps[this.depthMap.panoId] = this.depthMap;
 
-        context = canvas.getContext('2d');
+        if (currentLoaded < road.length - 1) {
+            currentLoaded++;
+            loadIndex(currentLoaded);
+        } else {
+            if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
+                "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) return;
 
-        console.log(this.depthMap);
+            // Hide loading message
+            document.getElementById("loading").style.display = "none";
+            
+            // Start rendering
+            animate();
 
-        w = this.depthMap.width;
-        h = this.depthMap.height;
-
-        canvas.setAttribute('width', w);
-        canvas.setAttribute('height', h);
-
-        image = context.getImageData(0, 0, w, h);
-
-        var verts = [];
-        var colors = [];
-
-        var plane = new THREE.PlaneGeometry(50, 50, w - 1, h - 1);
-
-        for (y = 0; y < h; ++y) {
-            for (x = 0; x < w; ++x) {
-                c = this.depthMap.depthMap[y * w + x] / 50 * 255;
-                c = clamp(c, 0, 256);
-                
-                image.data[4 * (y * w + x)] = c;
-                image.data[4 * (y * w + x) + 1] = c;
-                image.data[4 * (y * w + x) + 2] = c;
-                image.data[4 * (y * w + x) + 3] = 255;
-
-                var xnormalize = (w - x - 1) / (w - 1);
-                var ynormalize = (h - y - 1) / (h - 1);
-                var theta = xnormalize * (2 * Math.PI);
-                var phi = ynormalize * Math.PI;
-
-                var tmpX = c * Math.sin(phi) * Math.cos(theta);
-                var tmpY = c * Math.sin(phi) * Math.sin(theta);
-                var tmpZ = c * Math.cos(phi);
-
-                plane.vertices[y * w + x].set(tmpX, tmpY, tmpZ);
-            }
+            // show 1st sphere
+            updateSphere(getId(currentSphere));
         }
+    };
+}
 
-        var mesh = new THREE.Mesh(
-            plane,
-            material
+function getId(index) {
+    if (!assert(index < Object.keys(panoramas).length, { "message": "index greater than panoramas.length", "index": index,
+        "panoramas.length": Object.keys(panoramas).length })) return;
+    if (!assert(index < Object.keys(depthMaps).length, { "message": "index greater than deptMaths.length", "index": index,
+        "depthMaps.length": Object.keys(depthMaps).length })) return;
+        
+    return Object.keys(depthMaps)[index];
+}
+
+function updateSphere(panoId) {
+    if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
+    if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
+
+    this.depthMap = depthMaps[panoId];
+
+    var w = this.depthMap.width;
+    var h = this.depthMap.height;
+    
+    if (!assert(w === 512, { "message": "width not equal 512", "w": w })) return;
+    if (!assert(h === 256, { "message": "height not eqaul 256", "w": w })) return;
+
+    for (var y = 0; y < h; ++y) {
+        for (var x = 0; x < w; ++x) {
+            c = this.depthMap.depthMap[y * w + x] / 50 * 255;
+            c = clamp(c, 0, 256);
+
+            var xnormalize = (w - x - 1) / (w - 1);
+            var ynormalize = (h - y - 1) / (h - 1);
+            var theta = xnormalize * (2 * Math.PI);
+            var phi = ynormalize * Math.PI;
+
+            var tmpX = c * Math.sin(phi) * Math.cos(theta);
+            var tmpY = c * Math.sin(phi) * Math.sin(theta);
+            var tmpZ = c * Math.cos(phi);
+
+            sphere.vertices[y * w + x].set(tmpX, tmpY, tmpZ);
+        }
+    }
+
+    mesh.geometry.verticesNeedUpdate = true;
+
+    material.map = panoramas[panoId];
+    material.needsUpdate = true;
+    material.map.needsUpdate = true;
+
+    // careful since this one is made every time this is called
+    if (drawPoints) {
+        var points = new THREE.Points(
+            sphere,
+            new THREE.PointsMaterial()
         );
 
         // Rotate the mesh (since I don't math)
-        mesh.rotation.x = (Math.PI / 2);
-        scene.add(mesh);
+        points.rotation.x = (Math.PI / 2);
+        scene.add(points);
+    }
 
-        // var points = new THREE.Points(
-            // plane,
-            // new THREE.PointsMaterial({ vertexColors: THREE.VertexColors }) // vertex colors not working right now :(
-        // );
-
-        // Rotate the mesh (since I don't math)
-        // points.rotation.x = (Math.PI / 2);
-        // scene.add(points);
-
-        // Connect the image to the Texture
-        var texture = new THREE.Texture();
-        texture.image = image;
-        texture.minFilter = THREE.LinearFilter;
-        texture.needsUpdate = true;
-
-        // material.map = texture;
-        // material.needsUpdate = true;
-        // material.map.needsUpdate = true;
-
-        console.log("loading depth complete");
-
-        document.getElementById("loading").style.display = "none";
-
-        // material.wireframe = true;
-        // material.wireframeLinewidth = 5;
-    };
+    // material.wireframe = true;
+    // material.wireframeLinewidth = 5;
 }
 
 function onWindowResize() {
@@ -256,13 +215,7 @@ function loadIndex(i) {
     var lat = road[i].latitude;
     var long = road[i].longitude;
 
-    console.log("get (lat: " + lat + ", long: " + long + ")");
     _panoLoader.load(new google.maps.LatLng(lat, long));
-}
-
-function increment() {
-    roadIndex = (roadIndex + 1) % road.length;
-    loadIndex(roadIndex);
 }
 
 function checkKey(e) {
@@ -300,6 +253,15 @@ function checkKey(e) {
     } else if (e.keyCode == '68') {
         // D
         camera.translateX(speed);
+    } else if (e.keyCode == '90') {
+        // Z
+        currentSphere--;
+        if (currentSphere < 0) currentSphere = Object.keys(panoramas).length - 1;
+        updateSphere(getId(currentSphere));
+    } else if (e.keyCode == '88') {
+        // X
+        currentSphere = (currentSphere + 1) % Object.keys(panoramas).length;
+        updateSphere(getId(currentSphere));
     }
 
     camera.position.clampLength(-radius * 0.9, radius * 0.9);
@@ -308,4 +270,3 @@ function checkKey(e) {
 
 
 init();
-animate();
