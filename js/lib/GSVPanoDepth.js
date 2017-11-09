@@ -22,6 +22,9 @@ GSVPANO.PanoDepthLoader = function (parameters) {
                 try {
                     decoded = self.decode(data.model.depth_map);
                     depthMap = self.parse(decoded);
+
+                    // Add the panoId to the depth map object
+                    depthMap.panoId = panoId;
                 } catch(e) {
                     console.error("Error loading depth map for pano " + panoId + "\n" + e.message + "\nAt " + e.filename + "(" + e.lineNumber + ")");
                     depthMap = self.createEmptyDepthMap();
