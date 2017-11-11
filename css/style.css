@@ -2,9 +2,9 @@
 	position: absolute;
 	top: 50%;
 	width: 100%;
-	text-align: center;
 	z-index: 100;
     display:block;
+    text-align: center;
     color: white;
     font-size: 48px;
 }
@@ -15,4 +15,12 @@ body {
     color: #fff;
     margin: 0px;
     overflow: hidden;
+}
+
+#progress {
+    position: absolute;
+    bottom: 0%;
+    width: 0%;
+    height: 32px;
+    background-color: greenyellow;
 }

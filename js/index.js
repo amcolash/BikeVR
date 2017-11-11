@@ -1,5 +1,5 @@
 var container;
-var scene, camera, renderer, controls;
+var scene, camera, renderer, controls, stats;
 var sphere, mesh, material;
 
 var radius = 270;
@@ -43,43 +43,44 @@ function init() {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.vr.enabled = true;
-
     container.appendChild(renderer.domElement);
+    
+    stats = new Stats();
+    container.appendChild(stats.dom);
     
     // Hardcoded width/height since we always get the same sized depth map, assert in updating geo
     // Using a place since it is easy to make and has the UVs I am looking for
     sphere = new THREE.PlaneGeometry(50, 50, 512 - 1, 256 - 1);
     material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
-
+    
     mesh = new THREE.Mesh(
         sphere,
         material
     );
-
+    
     // Rotate the mesh (since I don't math)
     mesh.rotation.x = (Math.PI / 2);
     scene.add(mesh);
     
     var light = new THREE.AmbientLight(0xffffff);
     scene.add(light);
-
+    
     var origin = new THREE.Mesh(
         new THREE.SphereGeometry(5, 20, 20),
         new THREE.MeshBasicMaterial({ color: 0x555555 })
     );
     scene.add(origin);
-
-    if (!hasVR()) {
-        controls.enabled = true;
-
-        document.addEventListener('click', function (event) {
-            // Ask the browser to lock the pointer
-            document.body.requestPointerLock();
-        }, false);
-
+    
+    if (hasVR()) {
         document.body.appendChild(WEBVR.createButton(renderer));
+        renderer.vr.enabled = true;
     }
+    
+    controls.enabled = true;
+    document.addEventListener('click', function (event) {
+        // Ask the browser to lock the pointer
+        document.body.requestPointerLock();
+    }, false);
     
     window.addEventListener('resize', onWindowResize, false);
     document.onkeydown = checkKey;
@@ -117,20 +118,25 @@ function initListeners() {
         depthMaps[this.depthMap.panoId] = this.depthMap;
 
         if (currentLoaded < road.length - 1) {
+            if (currentLoaded == 0) {
+                // Start rendering
+                animate();
+
+                // show 1st sphere
+                updateSphere(getId(currentSphere));
+
+                document.getElementById("loading").style.display = "none";
+            }
+
             currentLoaded++;
+            document.getElementById("progress").style.width = ((currentLoaded / (road.length - 1)) * 100) + "%";
             loadIndex(currentLoaded);
         } else {
             if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
                 "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) return;
 
             // Hide loading message
-            document.getElementById("loading").style.display = "none";
-            
-            // Start rendering
-            animate();
-
-            // show 1st sphere
-            updateSphere(getId(currentSphere));
+            document.getElementById("progress").style.display = "none";
         }
     };
 }
@@ -208,6 +214,7 @@ function animate() {
 }
 
 function render() {
+    stats.update();
     renderer.render(scene, camera);
 }
 
@@ -216,56 +223,6 @@ function loadIndex(i) {
     var long = road[i].longitude;
 
     _panoLoader.load(new google.maps.LatLng(lat, long));
-}
-
-function checkKey(e) {
-    e = e || window.event;
-
-    var speed = 5;
-
-    if (e.keyCode == '37') {
-        // Left Arrow
-        camera.rotation.y += 0.1;
-    } else if (e.keyCode == '38') {
-        // Up Arrow
-        // camera.translateZ(-1);
-        camera.rotation.x += 0.1;
-    } else if (e.keyCode == '39') {
-        // Right Arrow
-        camera.rotation.y -= 0.1;
-    } else if (e.keyCode == '40') {
-        // Down Arrow
-        // camera.translateZ(1);
-        camera.rotation.x -= 0.1;
-    } else if (e.keyCode == '82') {
-        // 'R'
-        camera.position.set(0, 0, 0);
-        camera.rotation.set(0, 0, 0);
-    } else if (e.keyCode == '87') {
-        // W
-        camera.translateZ(-speed);
-    } else if (e.keyCode == '65') {
-        // A
-        camera.translateX(-speed);
-    } else if (e.keyCode == '83') {
-        // S
-        camera.translateZ(speed);
-    } else if (e.keyCode == '68') {
-        // D
-        camera.translateX(speed);
-    } else if (e.keyCode == '90') {
-        // Z
-        currentSphere--;
-        if (currentSphere < 0) currentSphere = Object.keys(panoramas).length - 1;
-        updateSphere(getId(currentSphere));
-    } else if (e.keyCode == '88') {
-        // X
-        currentSphere = (currentSphere + 1) % Object.keys(panoramas).length;
-        updateSphere(getId(currentSphere));
-    }
-
-    camera.position.clampLength(-radius * 0.9, radius * 0.9);
-    camera.updateProjectionMatrix();
 }
 
 
