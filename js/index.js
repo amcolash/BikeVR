@@ -125,6 +125,7 @@ function initListeners() {
                 // show 1st sphere
                 updateSphere(getId(currentSphere));
 
+                // hide the loading message
                 document.getElementById("loading").style.display = "none";
             }
 
