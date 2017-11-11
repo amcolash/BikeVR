@@ -1,5 +1,5 @@
 var container;
-var scene, camera, renderer, controls, stats;
+var scene, camera, renderer, controls, stats, raycaster;
 var sphere, mesh, material;
 
 var radius = 270;
@@ -10,9 +10,15 @@ var _depthLoader = new GSVPANO.PanoDepthLoader();
 
 var drawPoints = false;
 
+const WIDTH = 512 / 4;
+const HEIGHT = 256 / 4;
+
 // need to unload these with renderer.deallocateTexture(texture);
 var panoramas = [];
 var depthMaps = [];
+var info = [];
+
+var markers = [];
 
 var currentLoaded = 0;
 var currentSphere = 0;
@@ -48,9 +54,12 @@ function init() {
     stats = new Stats();
     container.appendChild(stats.dom);
     
+    raycaster = new THREE.Raycaster();
+    raycaster.set(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -1, 0));
+
     // Hardcoded width/height since we always get the same sized depth map, assert in updating geo
     // Using a place since it is easy to make and has the UVs I am looking for
-    sphere = new THREE.PlaneGeometry(50, 50, 512 - 1, 256 - 1);
+    sphere = new THREE.PlaneGeometry(50, 50, WIDTH - 1, HEIGHT - 1);
     material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
     
     mesh = new THREE.Mesh(
@@ -69,6 +78,7 @@ function init() {
         new THREE.SphereGeometry(5, 20, 20),
         new THREE.MeshBasicMaterial({ color: 0x555555 })
     );
+    origin.position.y = -256;
     scene.add(origin);
     
     if (hasVR()) {
@@ -95,6 +105,13 @@ function initListeners() {
     _panoLoader.onPanoramaLoad = function () {
         // Start loading depth map immediately
         _depthLoader.load(this.panoId);
+
+        // cache the lat/long
+        info[this.panoId] = {
+            "lat": this.lat,
+            "lng": this.lng,
+            "rot": this.rotation
+        };
 
         // Connect the image to the Texture
         var texture = new THREE.Texture();
@@ -135,6 +152,9 @@ function initListeners() {
         } else {
             if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
                 "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) return;
+            
+            // update markers after everything has loaded
+            updateMarkers();
 
             // Hide loading message
             document.getElementById("progress").style.display = "none";
@@ -160,8 +180,11 @@ function updateSphere(panoId) {
     var w = this.depthMap.width;
     var h = this.depthMap.height;
     
-    if (!assert(w === 512, { "message": "width not equal 512", "w": w })) return;
-    if (!assert(h === 256, { "message": "height not eqaul 256", "w": w })) return;
+    w /= 4;
+    h /= 4;
+    
+    if (!assert(w === WIDTH, { "message": "width not equal " + WIDTH, "w": w })) return;
+    if (!assert(h === HEIGHT, { "message": "height not eqaul " + HEIGHT, "h": h })) return;
 
     for (var y = 0; y < h; ++y) {
         for (var x = 0; x < w; ++x) {
@@ -180,7 +203,7 @@ function updateSphere(panoId) {
             sphere.vertices[y * w + x].set(tmpX, tmpY, tmpZ);
         }
     }
-
+    
     mesh.geometry.verticesNeedUpdate = true;
 
     material.map = panoramas[panoId];
@@ -199,8 +222,73 @@ function updateSphere(panoId) {
         scene.add(points);
     }
 
+    // See if the ray from the camera into the world hits one of our meshes
+    var intersects = raycaster.intersectObject(mesh);
+    // Toggle rotation bool for meshes that we clicked
+    if (intersects.length > 0) {
+        camera.position.y = (radius * 0.7) + intersects[0].point.y;
+        camera.updateProjectionMatrix();
+    }
+
+
+    // update markers
+    updateMarkers();
+
     // material.wireframe = true;
     // material.wireframeLinewidth = 5;
+}
+
+function updateMarkers() {
+    if (markers.length == 0 || markers.length != Object.keys(info).length) {
+        for (var i = 0; i < markers.length; i++) {
+            renderer.dispose(markers[i]);
+        }
+
+        markers = [];
+
+        var size = 8;
+        var marker = new THREE.BoxGeometry(size, size, size);
+        var material = new THREE.MeshPhongMaterial( {side: THREE.DoubleSide} );
+
+        for (var i = 0; i < Object.keys(info).length; i++) {
+            var mesh = new THREE.Mesh(marker, material);
+            markers[i] = mesh;
+            scene.add(mesh);
+        }
+    }
+
+    var baseLat = info[getId(currentSphere)].lat;
+    var baseLng = info[getId(currentSphere)].lng;
+    for (var i = 0; i < markers.length; i++) {
+        var markerLat = info[getId(i)].lat;
+        var markerLng = info[getId(i)].lng;
+
+        var length = measure(baseLat, baseLng, markerLat, markerLng);
+        
+        var diffLat = baseLat - markerLat;
+        var diffLng = baseLng - markerLng;
+        
+        tmpVec.set(diffLat, diffLng, 0).normalize();
+
+        console.log("measure: " + length);
+
+        markers[i].position.x = length * tmpVec.x;
+        markers[i].position.z = length * tmpVec.y;
+
+        console.log("x: " + markers[i].position.x + ", z: " + markers[i].position.z);
+    }
+}
+
+function measure(lat1, lon1, lat2, lon2) {  // generally used geo measurement function
+    var R = 6378.137; // Radius of earth in KM
+    var dLat = lat2 * Math.PI / 180 - lat1 * Math.PI / 180;
+    var dLon = lon2 * Math.PI / 180 - lon1 * Math.PI / 180;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var d = R * c;
+    return d * 1000; // meters
 }
 
 function onWindowResize() {

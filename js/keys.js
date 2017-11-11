@@ -1,7 +1,9 @@
+var tmpVec = new THREE.Vector3();
+
 function checkKey(e) {
     e = e || window.event;
 
-    var speed = 5;
+    var speed = 2;
 
     if (e.keyCode == '37') {
         // Left Arrow
@@ -35,15 +37,36 @@ function checkKey(e) {
         camera.translateX(speed);
     } else if (e.keyCode == '90') {
         // Z
-        currentSphere--;
-        if (currentSphere < 0) currentSphere = Object.keys(panoramas).length - 1;
-        updateSphere(getId(currentSphere));
+        prevSphere();
     } else if (e.keyCode == '88') {
         // X
-        currentSphere = (currentSphere + 1) % Object.keys(panoramas).length;
-        updateSphere(getId(currentSphere));
+        nextSphere();
+    }
+
+    if (camera.position.length() > 70 && currentLoaded >= road.length - 1) {
+        camera.getWorldDirection(tmpVec);
+        theta = Math.atan2(tmpVec.x, tmpVec.z);
+
+        if (theta > Math.PI / 2) {
+            nextSphere();
+        } else {
+            prevSphere();
+        }
+
+        camera.position.set(0, 0, 0);
     }
 
     camera.position.clampLength(-radius * 0.9, radius * 0.9);
     camera.updateProjectionMatrix();
+}
+
+function nextSphere() {
+    currentSphere = (currentSphere + 1) % Object.keys(panoramas).length;
+    updateSphere(getId(currentSphere));
+}
+
+function prevSphere() {
+    currentSphere--;
+    if (currentSphere < 0) currentSphere = Object.keys(panoramas).length - 1;
+    updateSphere(getId(currentSphere));
 }
