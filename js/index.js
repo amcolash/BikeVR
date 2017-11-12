@@ -13,10 +13,9 @@ var drawPoints = false;
 const WIDTH = 512 / 4;
 const HEIGHT = 256 / 4;
 
-// need to unload these with renderer.deallocateTexture(texture);
-var panoramas = [];
-var depthMaps = [];
-var info = [];
+var panoramas = {};
+var depthMaps = {};
+var info = {};
 
 var markers = [];
 
@@ -113,26 +112,16 @@ function initListeners() {
             "rot": this.rotation
         };
 
-        // Connect the image to the Texture
-        var texture = new THREE.Texture();
-
-        // cache the texture
-        panoramas[this.panoId] = texture;
-
-        var image = new Image();
-        image.onload = function () {
-            texture.image = image;
-            texture.minFilter = THREE.LinearFilter;
-            texture.needsUpdate = true;
-        };
-
-        image.src = this.canvas.toDataURL();
+        makeTexture(this.panoId, this.canvas.toDataURL());
     };
 
 
     _depthLoader.onDepthLoad = function () {
         // cache the depth map
         depthMaps[this.depthMap.panoId] = this.depthMap;
+
+        // update progress bar
+        document.getElementById("progress").style.width = ((currentLoaded / (road.length - 2)) * 100) + "%";
 
         if (currentLoaded < road.length - 1) {
             if (currentLoaded == 0) {
@@ -146,8 +135,8 @@ function initListeners() {
                 document.getElementById("loading").style.display = "none";
             }
 
+            // load the next pano/depth map
             currentLoaded++;
-            document.getElementById("progress").style.width = ((currentLoaded / (road.length - 1)) * 100) + "%";
             loadIndex(currentLoaded);
         } else {
             if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
@@ -160,6 +149,23 @@ function initListeners() {
             document.getElementById("progress").style.display = "none";
         }
     };
+}
+
+function makeTexture(panoId, data) {
+    // Connect the image to the Texture
+    var texture = new THREE.Texture();
+
+    // cache the texture
+    panoramas[panoId] = texture;
+
+    var image = new Image();
+    image.onload = function () {
+        texture.image = image;
+        texture.minFilter = THREE.LinearFilter;
+        texture.needsUpdate = true;
+    };
+
+    image.src = data;
 }
 
 function getId(index) {
@@ -269,6 +275,8 @@ function updateMarkers() {
         var diffLng = baseLng - markerLng;
         
         tmpVec.set(diffLat, diffLng, 0).normalize();
+
+        // TODO: Make sure that the images are mapped correctly and not horizontally flipped
 
         console.log("measure: " + length);
 

@@ -13,20 +13,12 @@ var road = [
         "longitude": 149.1290788
     },
     {
-        "latitude": -35.2803415,
-        "longitude": 149.1290788
-    },
-    {
         "latitude": -35.280451499999991,
         "longitude": 149.1290784
     },
     {
         "latitude": -35.2805167,
         "longitude": 149.1290879
-    },
-    {
-        "latitude": -35.2805901,
-        "longitude": 149.1291104
     },
     {
         "latitude": -35.2805901,
