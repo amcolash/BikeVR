@@ -22,18 +22,6 @@ var markers = [];
 var currentLoaded = 0;
 var currentSphere = 0;
 
-function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
-};
-
-assert = function (cond, text) {
-    console.assert(cond, text);
-    return cond;
-};
-
-function hasVR() {
-    return ('getVRDisplays' in navigator);
-}
 
 function init() {
     container = document.createElement('div');
@@ -192,6 +180,11 @@ function updateSphere(panoId) {
     if (!assert(w === WIDTH, { "message": "width not equal " + WIDTH, "w": w })) return;
     if (!assert(h === HEIGHT, { "message": "height not eqaul " + HEIGHT, "h": h })) return;
 
+    var rotation = 0;
+    var id = getId(panoId);
+    if (id > 0 && id < road.length) {
+        //rotation = google.maps.geometry.spherical.computeHeading(road[id], road[id + 1]);
+    }
     for (var y = 0; y < h; ++y) {
         for (var x = 0; x < w; ++x) {
             c = this.depthMap.depthMap[y * w + x] / 50 * 255;
@@ -199,7 +192,7 @@ function updateSphere(panoId) {
 
             var xnormalize = (w - x - 1) / (w - 1);
             var ynormalize = (h - y - 1) / (h - 1);
-            var theta = xnormalize * (2 * Math.PI);
+            var theta = xnormalize * (2 * Math.PI) + rotation;
             var phi = ynormalize * Math.PI;
 
             var tmpX = c * Math.sin(phi) * Math.cos(theta);
@@ -245,6 +238,8 @@ function updateSphere(panoId) {
 }
 
 function updateMarkers() {
+    return;
+
     if (markers.length == 0 || markers.length != Object.keys(info).length) {
         for (var i = 0; i < markers.length; i++) {
             renderer.dispose(markers[i]);
@@ -274,7 +269,7 @@ function updateMarkers() {
         var diffLat = baseLat - markerLat;
         var diffLng = baseLng - markerLng;
         
-        tmpVec.set(diffLat, diffLng, 0).normalize();
+        tmpVec.set(diffLng, diffLat, 0).normalize();
 
         // TODO: Make sure that the images are mapped correctly and not horizontally flipped
 
@@ -285,18 +280,6 @@ function updateMarkers() {
 
         console.log("x: " + markers[i].position.x + ", z: " + markers[i].position.z);
     }
-}
-
-function measure(lat1, lon1, lat2, lon2) {  // generally used geo measurement function
-    var R = 6378.137; // Radius of earth in KM
-    var dLat = lat2 * Math.PI / 180 - lat1 * Math.PI / 180;
-    var dLon = lon2 * Math.PI / 180 - lon1 * Math.PI / 180;
-    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c;
-    return d * 1000; // meters
 }
 
 function onWindowResize() {
@@ -316,11 +299,5 @@ function render() {
 }
 
 function loadIndex(i) {
-    var lat = road[i].latitude;
-    var long = road[i].longitude;
-
-    _panoLoader.load(new google.maps.LatLng(lat, long));
+    _panoLoader.load(road[i]);
 }
-
-
-init();
