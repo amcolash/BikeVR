@@ -8,9 +8,10 @@ var hq = false;
 var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
 var _depthLoader = new GSVPANO.PanoDepthLoader();
 
-var drawPoints = true;
+var drawPoints = false;
 
-var depthFactor = 4;
+// TODO: Do I need this?
+var depthFactor = 1;
 
 const WIDTH = 512 / depthFactor;
 const HEIGHT = 256 / depthFactor;
@@ -24,14 +25,14 @@ var markers = [];
 var currentLoaded = 0;
 var currentSphere = 0;
 
-var position = new THREE.Vector3(0,-256,0);
+var position = new THREE.Vector3();
 
 function init() {
     container = document.createElement('div');
     document.body.appendChild(container);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, radius * 10);
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, radius * 10);
     
     controls = new THREE.PointerLockControls(camera);
     scene.add(controls.getObject());
@@ -199,9 +200,6 @@ function updateSphere(panoId) {
 
     var w = depthMap.width;
     var h = depthMap.height;
-    
-    w /= depthFactor;
-    h /= depthFactor;
     
     if (!assert(w === WIDTH, { "message": "width not equal " + WIDTH, "w": w })) return;
     if (!assert(h === HEIGHT, { "message": "height not eqaul " + HEIGHT, "h": h })) return;
