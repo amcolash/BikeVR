@@ -21,16 +21,19 @@ function checkKey(e) {
         camera.rotation.x -= 0.1;
     } else if (e.keyCode == '82') {
         // 'R'
-        camera.position.set(0, 0, 0);
-        camera.rotation.set(0, 0, 0);
+        resetCamera();
     } else if (e.keyCode == '87') {
         // W
+        // camera.getWorldDirection(tmpVec);
+        // position.add(tmpVec.multiplyScalar(speed));
         camera.translateZ(-speed);
     } else if (e.keyCode == '65') {
         // A
         camera.translateX(-speed);
     } else if (e.keyCode == '83') {
         // S
+        // camera.getWorldDirection(tmpVec);
+        // position.add(tmpVec.multiplyScalar(-speed));
         camera.translateZ(speed);
     } else if (e.keyCode == '68') {
         // D
@@ -43,20 +46,20 @@ function checkKey(e) {
         nextSphere();
     }
 
-    if (camera.position.length() > 70 && currentLoaded >= road.length - 1) {
-        camera.getWorldDirection(tmpVec);
-        theta = Math.atan2(tmpVec.x, tmpVec.z);
+    position.y = -256;
 
-        if (theta > Math.PI / 2) {
-            nextSphere();
-        } else {
-            prevSphere();
-        }
+    // if (camera.position.length() > 70 && currentLoaded > currentSphere) {
+    //     camera.getWorldDirection(tmpVec);
+    //     theta = Math.atan2(tmpVec.x, tmpVec.z);
 
-        camera.position.set(0, 0, 0);
-    }
+    //     if (theta > Math.PI / 2) {
+    //         nextSphere();
+    //     } else {
+    //         prevSphere();
+    //     }
+    // }
 
-    camera.position.clampLength(-radius * 0.9, radius * 0.9);
+    // camera.position.clampLength(-radius * 0.9, radius * 0.9);
     camera.updateProjectionMatrix();
 }
 

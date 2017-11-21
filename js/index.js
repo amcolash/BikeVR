@@ -1,6 +1,6 @@
 var container;
 var scene, camera, renderer, controls, stats, raycaster;
-var sphere, mesh, material;
+var sphere, mesh, origin, material;
 
 var radius = 270;
 
@@ -8,10 +8,12 @@ var hq = false;
 var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
 var _depthLoader = new GSVPANO.PanoDepthLoader();
 
-var drawPoints = false;
+var drawPoints = true;
 
-const WIDTH = 512 / 4;
-const HEIGHT = 256 / 4;
+var depthFactor = 4;
+
+const WIDTH = 512 / depthFactor;
+const HEIGHT = 256 / depthFactor;
 
 var panoramas = {};
 var depthMaps = {};
@@ -22,13 +24,14 @@ var markers = [];
 var currentLoaded = 0;
 var currentSphere = 0;
 
+var position = new THREE.Vector3(0,-256,0);
 
 function init() {
     container = document.createElement('div');
     document.body.appendChild(container);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, radius * 3);
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, radius * 10);
     
     controls = new THREE.PointerLockControls(camera);
     scene.add(controls.getObject());
@@ -48,7 +51,7 @@ function init() {
     // Using a place since it is easy to make and has the UVs I am looking for
     sphere = new THREE.PlaneGeometry(50, 50, WIDTH - 1, HEIGHT - 1);
     material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
-    
+
     mesh = new THREE.Mesh(
         sphere,
         material
@@ -61,11 +64,11 @@ function init() {
     var light = new THREE.AmbientLight(0xffffff);
     scene.add(light);
     
-    var origin = new THREE.Mesh(
+    origin = new THREE.Mesh(
         new THREE.SphereGeometry(5, 20, 20),
-        new THREE.MeshBasicMaterial({ color: 0x555555 })
+        // new THREE.MeshBasicMaterial({ color: 0x555555 })
+        new THREE.MeshBasicMaterial({ color: 0x00ff00 })
     );
-    origin.position.y = -256;
     scene.add(origin);
     
     if (hasVR()) {
@@ -85,6 +88,17 @@ function init() {
     initListeners();
 
     loadIndex(currentLoaded);
+}
+
+function resetCamera() {
+    var intersects = raycaster.intersectObject(mesh);
+    if (intersects.length > 0) {
+        camera.position.y = (radius * 0.7) + intersects[0].point.y;
+    } else {
+        camera.position.set(0, 0, 0);
+    }
+
+    camera.rotation.set(0, 0, 0);
 }
 
 function initListeners() {
@@ -157,37 +171,53 @@ function makeTexture(panoId, data) {
 }
 
 function getId(index) {
+    if (!assert(typeof index == "number", { "message": "index provided is not a number", "index": index })) return;
     if (!assert(index < Object.keys(panoramas).length, { "message": "index greater than panoramas.length", "index": index,
         "panoramas.length": Object.keys(panoramas).length })) return;
-    if (!assert(index < Object.keys(depthMaps).length, { "message": "index greater than deptMaths.length", "index": index,
+    if (!assert(index < Object.keys(depthMaps).length, { "message": "index greater than depthMaths.length", "index": index,
         "depthMaps.length": Object.keys(depthMaps).length })) return;
+    if (!assert(index < Object.keys(info).length, { "message": "index greater than info.length", "index": index,
+        "info.length": Object.keys(info).length })) return;
         
-    return Object.keys(depthMaps)[index];
+    return Object.keys(panoramas)[index];
+}
+
+function getIndex(panoId) {
+    if (!assert(panoramas[panoId] != undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
+    if (!assert(depthMaps[panoId] != undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
+    if (!assert(info[panoId] != undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
+
+    return Object.keys(panoramas).indexOf(panoId);
 }
 
 function updateSphere(panoId) {
     if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
     if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
+    if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
 
-    this.depthMap = depthMaps[panoId];
+    var depthMap = depthMaps[panoId];
 
-    var w = this.depthMap.width;
-    var h = this.depthMap.height;
+    var w = depthMap.width;
+    var h = depthMap.height;
     
-    w /= 4;
-    h /= 4;
+    w /= depthFactor;
+    h /= depthFactor;
     
     if (!assert(w === WIDTH, { "message": "width not equal " + WIDTH, "w": w })) return;
     if (!assert(h === HEIGHT, { "message": "height not eqaul " + HEIGHT, "h": h })) return;
 
-    var rotation = 0;
-    var id = getId(panoId);
-    if (id > 0 && id < road.length) {
-        //rotation = google.maps.geometry.spherical.computeHeading(road[id], road[id + 1]);
+    var rotation = info[panoId].rot;
+    var index = getIndex(panoId);
+
+    // Not doing an assert since we need index && index - 1
+    if (index > 0 && index < road.length) {
+        var extra = google.maps.geometry.spherical.computeHeading(road[index - 1], road[index]).toRad();
+        rotation -= extra;
     }
+
     for (var y = 0; y < h; ++y) {
         for (var x = 0; x < w; ++x) {
-            c = this.depthMap.depthMap[y * w + x] / 50 * 255;
+            c = depthMap.depthMap[y * w + x] / 50 * 255;
             c = clamp(c, 0, 256);
 
             var xnormalize = (w - x - 1) / (w - 1);
@@ -225,7 +255,13 @@ function updateSphere(panoId) {
     var intersects = raycaster.intersectObject(mesh);
     // Toggle rotation bool for meshes that we clicked
     if (intersects.length > 0) {
+        // slightly above ground
         camera.position.y = (radius * 0.7) + intersects[0].point.y;
+
+        // Go to the opposite side from where we came from
+        camera.x *= -1;
+        camera.z *= -1;
+
         camera.updateProjectionMatrix();
     }
 
@@ -295,6 +331,9 @@ function animate() {
 
 function render() {
     stats.update();
+
+    origin.position.set(position.x, position.y, position.z);
+
     renderer.render(scene, camera);
 }
 

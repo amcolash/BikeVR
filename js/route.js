@@ -1,19 +1,16 @@
 var directionsService = new google.maps.DirectionsService();
 
-var start = "22 E Dayton, Madison WI";
-var end = "424 W Mifflin, Madison WI";
-// var url = "https://maps.googleapis.com/maps/api/directions/json?origin=" + start + "&destination=" + end + "&avoid=tolls|highways|ferries&key=" + apikey;
-
 var request = {
-    origin: start,
-    destination: end,
-    travelMode: 'DRIVING'
+    origin: "22 E Dayton St, Madison WI",
+    destination: "424 W Mifflin St, Madison WI",
+    // destination: "Madison Sourdough, Madison WI",
+    travelMode: 'DRIVING' // May or may not have luck with street view this way
 };
 
 var minDist = 20;
 
 directionsService.route(request, function (result, status) {
-    if (status == 'OK') {
+    if (assert(status == 'OK', { "message": "no routes found" })) {
         if (!assert(result.routes.length > 0, { "message": "no routes found!" })) return;
 
         var path = [];
@@ -33,7 +30,7 @@ directionsService.route(request, function (result, status) {
             }
         }
 
-        // subdivide if needed
+        // subdivide the path so that each piece has a point at least within minDist
         newPath = [];
         for (var i = 0; i < path.length - 1; i++) {
             var p1 = path[i];
@@ -66,7 +63,7 @@ directionsService.route(request, function (result, status) {
 
         road = path;
 
-        // start things up after we have loaded the path
+        // start things up (for the rendering/strret view side) after we have loaded the path
         init();
 
         // console.log("path length: " + path.length);
