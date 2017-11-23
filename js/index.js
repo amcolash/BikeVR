@@ -2,6 +2,8 @@ var container;
 var scene, camera, renderer, controls, stats, raycaster;
 var sphere, mesh, origin, material;
 
+var clock = new THREE.Clock();
+
 var radius = 270;
 
 var hq = false;
@@ -32,10 +34,19 @@ function init() {
     document.body.appendChild(container);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, radius * 10);
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+
+    controls = new THREE.FirstPersonControls(camera);
+    controls.lookSpeed = 1.5;
+    controls.movementSpeed = 20;
+    controls.noFly = true;
+    controls.lookVertical = true;
+    controls.constrainVertical = true;
+    controls.verticalMin = 1.0;
+    controls.verticalMax = 2.0;
     
-    controls = new THREE.PointerLockControls(camera);
-    scene.add(controls.getObject());
+    // controls = new THREE.PointerLockControls(camera);
+    // scene.add(controls.getObject());
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -77,7 +88,7 @@ function init() {
         renderer.vr.enabled = true;
     }
     
-    controls.enabled = true;
+    // controls.enabled = true;
     document.addEventListener('click', function (event) {
         // Ask the browser to lock the pointer
         document.body.requestPointerLock();
@@ -92,13 +103,13 @@ function init() {
 }
 
 function resetCamera() {
-    var intersects = raycaster.intersectObject(mesh);
-    if (intersects.length > 0) {
-        camera.position.y = (radius * 0.7) + intersects[0].point.y;
-    } else {
-        camera.position.set(0, 0, 0);
-    }
+    // if (intersects.length > 0) {
+    //     camera.position.y = (radius * 0.7) + intersects[0].point.y;
+    // } else {
+    //     camera.position.set(0, 0, 0);
+    // }
 
+    camera.position.set(0, 0, -1);
     camera.rotation.set(0, 0, 0);
 }
 
@@ -252,17 +263,19 @@ function updateSphere(panoId) {
     // See if the ray from the camera into the world hits one of our meshes
     var intersects = raycaster.intersectObject(mesh);
     // Toggle rotation bool for meshes that we clicked
-    if (intersects.length > 0) {
-        // slightly above ground
-        camera.position.y = (radius * 0.7) + intersects[0].point.y;
+    // if (intersects.length > 0) {
+    //     // slightly above ground
+    //     camera.position.y = (radius * 0.7) + intersects[0].point.y;
 
-        // Go to the opposite side from where we came from
-        camera.x *= -1;
-        camera.z *= -1;
+    //     // Go to the opposite side from where we came from
+    //     camera.x *= -1;
+    //     camera.z *= -1;
 
-        camera.updateProjectionMatrix();
-    }
-
+    //     camera.updateProjectionMatrix();
+    // }
+    // camera.position.set(0, 0, 0);
+    // camera.updateProjectionMatrix();
+    resetCamera();
 
     // update markers
     updateMarkers();
@@ -330,7 +343,10 @@ function animate() {
 function render() {
     stats.update();
 
-    origin.position.set(position.x, position.y, position.z);
+    var delta = clock.getDelta();
+    controls.update(delta);
+
+    // origin.position.set(position.x, position.y, position.z);
 
     renderer.render(scene, camera);
 }

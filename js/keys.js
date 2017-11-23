@@ -7,18 +7,18 @@ function checkKey(e) {
 
     if (e.keyCode == '37') {
         // Left Arrow
-        camera.rotation.y += 0.1;
+        // camera.rotation.y += 0.1;
     } else if (e.keyCode == '38') {
         // Up Arrow
         // camera.translateZ(-1);
-        camera.rotation.x += 0.1;
+        // camera.rotation.x += 0.1;
     } else if (e.keyCode == '39') {
         // Right Arrow
-        camera.rotation.y -= 0.1;
+        // camera.rotation.y -= 0.1;
     } else if (e.keyCode == '40') {
         // Down Arrow
         // camera.translateZ(1);
-        camera.rotation.x -= 0.1;
+        // camera.rotation.x -= 0.1;
     } else if (e.keyCode == '82') {
         // 'R'
         resetCamera();
@@ -26,18 +26,18 @@ function checkKey(e) {
         // W
         // camera.getWorldDirection(tmpVec);
         // position.add(tmpVec.multiplyScalar(speed));
-        camera.translateZ(-speed);
+        // camera.translateZ(-speed);
     } else if (e.keyCode == '65') {
         // A
-        camera.translateX(-speed);
+        // camera.translateX(-speed);
     } else if (e.keyCode == '83') {
         // S
         // camera.getWorldDirection(tmpVec);
         // position.add(tmpVec.multiplyScalar(-speed));
-        camera.translateZ(speed);
+        // camera.translateZ(speed);
     } else if (e.keyCode == '68') {
         // D
-        camera.translateX(speed);
+        // camera.translateX(speed);
     } else if (e.keyCode == '90') {
         // Z
         prevSphere();
@@ -46,7 +46,7 @@ function checkKey(e) {
         nextSphere();
     }
 
-    position.y = -256;
+    // position.y = -256;
 
     // if (camera.position.length() > 70 && currentLoaded > currentSphere) {
     //     camera.getWorldDirection(tmpVec);
@@ -60,7 +60,7 @@ function checkKey(e) {
     // }
 
     // camera.position.clampLength(-radius * 0.9, radius * 0.9);
-    camera.updateProjectionMatrix();
+    // camera.updateProjectionMatrix();
 }
 
 function nextSphere() {
