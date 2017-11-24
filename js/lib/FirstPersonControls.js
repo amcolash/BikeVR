@@ -138,9 +138,6 @@ THREE.FirstPersonControls = function ( object, domElement ) {
 
 		// this.mouseX += this.viewHalfX;
 		// this.mouseY += this.viewHalfY;
-
-		// console.log(this.mouseX + ", " + this.mouseY);
-
 	};
 
 	this.onKeyDown = function ( event ) {
@@ -200,6 +197,9 @@ THREE.FirstPersonControls = function ( object, domElement ) {
 			return;
 
 		}
+
+		this.mouseX *= delta * 50;
+		this.mouseY *= delta * 50;
 
 		if ( this.heightSpeed ) {
 

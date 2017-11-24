@@ -29,6 +29,8 @@ var currentSphere = 0;
 
 var position = new THREE.Vector3();
 
+defaultRoute();
+
 function init() {
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -38,7 +40,7 @@ function init() {
 
     controls = new THREE.FirstPersonControls(camera);
     controls.lookSpeed = 1.5;
-    controls.movementSpeed = 20;
+    controls.movementSpeed = 10;
     controls.noFly = true;
     controls.lookVertical = true;
     controls.constrainVertical = true;
@@ -218,9 +220,13 @@ function updateSphere(panoId) {
     var rotation = info[panoId].rot;
     var index = getIndex(panoId);
 
-    // Not doing an assert since we need index && index - 1
     if (index > 0 && index < road.length) {
         var extra = google.maps.geometry.spherical.computeHeading(road[index - 1], road[index]).toRad();
+        if (index > 1) {
+            extra -= google.maps.geometry.spherical.computeHeading(road[index - 2], road[index - 1]).toRad();
+        } else {
+            extra -= google.maps.geometry.spherical.computeHeading(road[index - 1], road[index]).toRad();
+        }
         rotation -= extra;
     }
 
@@ -345,6 +351,7 @@ function render() {
 
     var delta = clock.getDelta();
     controls.update(delta);
+    camera.position.y = -1;
 
     // origin.position.set(position.x, position.y, position.z);
 

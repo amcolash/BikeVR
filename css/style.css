@@ -24,3 +24,8 @@ body {
     height: 32px;
     background-color: greenyellow;
 }
+
+#map {
+    height: 400px;
+    width: 100%;
+}
