@@ -10,17 +10,19 @@
 </head>
 
 <body>
-    <section style="padding-bottom: 10px">
-        <span>Start:</span>
-        <input type="text" size="50" id="startLocation" value="22 E Dayton St, Madison WI" onkeypress="return customRoute()">
-
-        <span>End:</span>
-        <input type="text" size="50" id="endLocation" value="424 W Mifflin St, Madison WI" onkeypress="return customRoute()">
-
-        <button onclick="customRoute()">Route</button>
-    </section>
-
-    <div id="map"></div>
+    <div id="route">
+        <form class="padding-bottom" onsubmit="customRoute(); return false;">
+            <span>Start:</span>
+            <input type="text" size="50" id="startLocation" value="22 E Dayton St, Madison WI">
+    
+            <span>End:</span>
+            <input type="text" size="50" id="endLocation" value="424 W Mifflin St, Madison WI">
+    
+            <input type="submit" value="Get Route"></input>
+        </form>
+    
+        <div id="map"></div>
+    </div>
 
     <script src="https://maps.googleapis.com/maps/api/js?libraries=places" type="text/javascript"></script>
     <script src="js/lib/jquery.min.js" type="text/javascript"></script>
