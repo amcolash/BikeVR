@@ -91,7 +91,7 @@ function init() {
     }
     
     // controls.enabled = true;
-    document.addEventListener('click', function (event) {
+    container.addEventListener('click', function (event) {
         // Ask the browser to lock the pointer
         document.body.requestPointerLock();
     }, false);
@@ -324,8 +324,6 @@ function updateMarkers() {
         
         tmpVec.set(diffLng, diffLat, 0).normalize();
 
-        // TODO: Make sure that the images are mapped correctly and not horizontally flipped
-
         console.log("measure: " + length);
 
         markers[i].position.x = length * tmpVec.x;
@@ -347,11 +345,24 @@ function animate() {
 }
 
 function render() {
+    // Only render when in view
+    if (document.visibilityState !== "visible") {
+        console.log(document.visibilityState);
+        return;
+    }
+        
+
     stats.update();
 
     var delta = clock.getDelta();
     controls.update(delta);
     camera.position.y = -1;
+
+    if (currentLoaded == road.length - 1) {
+        progress = (progress + delta * mps) % dist;
+        currPos.setCenter(getPosition());
+        map.setCenter(currPos.getCenter());
+    }
 
     // origin.position.set(position.x, position.y, position.z);
 
