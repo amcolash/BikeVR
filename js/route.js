@@ -1,21 +1,72 @@
 var directionsService = new google.maps.DirectionsService();
 var minDist = 20;
 
+var markers = new Array();
+var currentSphere;
+var currentPos;
+
+var dist;
+
 var start = document.getElementById('startLocation');
 var end = document.getElementById('endLocation');
 if (start) startAutocomplete = new google.maps.places.Autocomplete(start);
 if (end) endAutocomplete = new google.maps.places.Autocomplete(end);
 
-var us = { lat: 39.50, lng: -98.35 };
 var mapElem = document.getElementById('map');
 if (mapElem) {
     var map = new google.maps.Map(mapElem, {
         zoom: 4,
-        center: us
+        center: { lat: 39.50, lng: -98.35 } // center of us
     });
+
+    var progress = 0; // in meters traveled
+    var velocity = 10; // km/hr
+    var mps = velocity * 1000 / 3600; // m/s
+
+    var delta = 100; // milliseconds
+    setInterval(function () {
+        if (currentSphere && currentPos && road && road.length > 0) {
+            progress = (progress + (delta / 1000) * mps) % dist;
+
+            currentPos.setCenter(getPosition());
+        }
+    }, delta);
 }
 
-var markers = new Array();
+function getPosition() {
+    var pos;
+    if (road) {
+        var tmpDst = 0;
+        var prevDst = 0;
+        for (var i = 0; i < road.length - 1; i++) {
+            prevDst = tmpDst;
+            tmpDst += measure(road[i], road[i + 1]);
+
+            if (progress > tmpDst) continue;
+
+            // otherwise we are done
+            break;
+        }
+        
+        var delta = progress - prevDst;
+        var currDist = measure(road[i], road[i + 1]);
+        
+        if (delta < currDist / 2) {
+            currentSphere.setCenter(road[i]);
+            currentSphere.setRadius(currDist / 2);
+        } else {
+            currentSphere.setCenter(road[i + 1]);
+
+            if (i < road.length - 2) {
+                currentSphere.setRadius(measure(road[i+1], road[i+2]) / 2);
+            }
+        }
+
+        pos = lerpGeo(road[i], road[i + 1], delta / currDist);
+    }
+
+    return pos;
+}
 
 function customRoute() {
     if (start.value && start.value.length > 0 && end.value && end.value.length > 0) {
@@ -42,6 +93,7 @@ function defaultRoute() {
 function getRoute(request) {
     for (var i = 0; i < markers.length; i++) {
         markers[i].setMap(null);
+        markers[i] = null;
     }
     markers.length = 0;
 
@@ -71,11 +123,11 @@ function getRoute(request) {
             for (var i = 0; i < path.length - 1; i++) {
                 var p1 = path[i];
                 var p2 = path[i + 1];
-                var dist = measure(p1.lat(), p1.lng(), p2.lat(), p2.lng());
+                var dst = measure(p1, p2);
 
                 newPath.push(p1);
-                if (dist > minDist) {
-                    var extraPoints = dist / minDist;
+                if (dst > minDist) {
+                    var extraPoints = dst / minDist;
                     for (var j = 1; j < extraPoints; j++) {
                         newPath.push(lerpGeo(p1, p2, (1 / extraPoints) * j));
                     }
@@ -89,7 +141,7 @@ function getRoute(request) {
             var last = path[0];
             for (var i = 1; i < path.length - 1; i++) {
                 var p1 = path[i];
-                if (measure(last.lat(), last.lng(), p1.lat(), p1.lng()) >= minDist) {
+                if (measure(last, p1) >= minDist) {
                     newPath.push(p1);
                     last = p1;
                 }
@@ -99,12 +151,43 @@ function getRoute(request) {
 
             road = path;
 
+            // measure after everything, just to keep it simple
+            dist = 0;
+            for (var i = 0; i < road.length - 1; i++) {
+                dist += measure(road[i], road[i + 1]);
+            }
+
             // start things up (for the rendering/strret view side) after we have loaded the path
             if (typeof init === "function") {
                 // default behavior in vr mode
                 init();
             } else {
                 // Show map
+                if (currentSphere) currentSphere.setMap(null);
+                if (currentPos) currentPos.setMap(null);
+
+                currentSphere = new google.maps.Circle({
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: '#FF0000',
+                    fillOpacity: 0.35,
+                    map: map,
+                    center: road[0],
+                    radius: minDist / 2
+                });
+
+                currentPos = new google.maps.Circle({
+                    strokeColor: '#0000FF',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: '#0000FF',
+                    fillOpacity: 0.35,
+                    map: map,
+                    center: road[0],
+                    radius: minDist / 4
+                });
+
                 var bounds = new google.maps.LatLngBounds();
                 for (var i = 0; i < road.length; i++) {
                     var marker = new google.maps.Marker({
@@ -118,24 +201,24 @@ function getRoute(request) {
 
                 // Fir bounds to all of the markers
                 map.fitBounds(bounds);
+
+                // console.log("path length: " + path.length);
+
+                // output for map coords
+                // var s = "";
+                // for (var i = 0; i < path.length; i++) {
+                //     s += path[i].lat() + ", " + path[i].lng() + "\n"
+                // }
+                // console.log(s);
+
+                // // output for plotting on graph
+                // s = "";
+                // for (var i = 0; i < path.length; i++) {
+                //     s += "(" + path[i].lng() + ", " + path[i].lat() + "),"
+                // }
+                // s = s.substring(0, s.length - 1);
+                // console.log(s);
             }
-
-            // console.log("path length: " + path.length);
-
-            // output for map coords
-            // var s = "";
-            // for (var i = 0; i < path.length; i++) {
-            //     s += path[i].lat() + ", " + path[i].lng() + "\n"
-            // }
-            // console.log(s);
-
-            // // output for plotting on graph
-            // s = "";
-            // for (var i = 0; i < path.length; i++) {
-            //     s += "(" + path[i].lng() + ", " + path[i].lat() + "),"
-            // }
-            // s = s.substring(0, s.length - 1);
-            // console.log(s);
         }
     });
 }
