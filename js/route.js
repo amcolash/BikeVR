@@ -15,7 +15,7 @@ if (end) endAutocomplete = new google.maps.places.Autocomplete(end);
 var mapElem = document.getElementById('map');
 if (mapElem) {
     var map = new google.maps.Map(mapElem, {
-        zoom: 17,
+        zoom: 4,
         center: { lat: 39.50, lng: -98.35 } // center of us
     });
 
@@ -100,7 +100,7 @@ function customRoute() {
 function defaultRoute() {
     var request = {
         origin: "22 E Dayton St, Madison WI",
-        destination: "424 W Mifflin St, Madison WI",
+        destination: "1 W Dayton St, Madison WI",
         travelMode: 'DRIVING' // May or may not have luck with street view this way
     };
 
@@ -221,6 +221,7 @@ function getRoute(request) {
             if (start && end) {
                 map.fitBounds(bounds);
             } else {
+                map.setZoom(17);
                 map.setCenter(road[0]);
             }
 

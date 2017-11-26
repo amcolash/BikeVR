@@ -1,3 +1,13 @@
+/* Common */
+body {
+    font-family: Monospace;
+    background-color: #101010;
+    color: #fff;
+    margin: 0px;
+    overflow: hidden;
+}
+
+/* VR page */
 #loading {
 	position: absolute;
 	top: 50%;
@@ -9,14 +19,6 @@
     font-size: 48px;
 }
 
-body {
-    font-family: Monospace;
-    background-color: #101010;
-    color: #fff;
-    margin: 0px;
-    overflow: hidden;
-}
-
 #progress {
     position: absolute;
     bottom: 0%;
@@ -25,12 +27,28 @@ body {
     background-color: greenyellow;
 }
 
-#vr #map {
-    width: 200px;
-    height: 200px;
+#vr {
     position: absolute;
     bottom: 20px;
     right: 20px;
+}
+
+#vr #controls {
+    text-align: right;
+}
+
+#vr #controls button {
+    font-size: 24px;
+}
+
+#vr #map {
+    width: 200px;
+    height: 200px;
+}
+
+/* Route page */
+#route {
+    padding: 12px;
 }
 
 #route #map {
@@ -38,10 +56,7 @@ body {
     height: 800px;
 }
 
-#route {
-    padding: 12px;
-}
-
+/* Utiltiy */
 .padding-top {
     padding-top: 10px;
 }

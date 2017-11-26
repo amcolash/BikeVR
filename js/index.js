@@ -11,9 +11,9 @@ var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
 var _depthLoader = new GSVPANO.PanoDepthLoader();
 
 var drawPoints = false;
+var autoMove = false;
 
-// TODO: Do I need this?
-var depthFactor = 1;
+var depthFactor = 4;
 
 const WIDTH = 512 / depthFactor;
 const HEIGHT = 256 / depthFactor;
@@ -211,11 +211,11 @@ function updateSphere(panoId) {
 
     var depthMap = depthMaps[panoId];
 
-    var w = depthMap.width;
-    var h = depthMap.height;
+    var w = depthMap.width / depthFactor;
+    var h = depthMap.height / depthFactor;
     
-    if (!assert(w === WIDTH, { "message": "width not equal " + WIDTH, "w": w })) return;
-    if (!assert(h === HEIGHT, { "message": "height not eqaul " + HEIGHT, "h": h })) return;
+    // if (!assert(w === WIDTH, { "message": "width not equal " + WIDTH, "w": w })) return;
+    // if (!assert(h === HEIGHT, { "message": "height not eqaul " + HEIGHT, "h": h })) return;
 
     var rotation = info[panoId].rot;
     var index = getIndex(panoId);
@@ -232,7 +232,8 @@ function updateSphere(panoId) {
 
     for (var y = 0; y < h; ++y) {
         for (var x = 0; x < w; ++x) {
-            c = depthMap.depthMap[y * w + x] / 50 * 255;
+            c = depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50 * 255;
+
             c = clamp(c, 0, 256);
 
             var xnormalize = (w - x - 1) / (w - 1);
@@ -247,6 +248,8 @@ function updateSphere(panoId) {
             sphere.vertices[y * w + x].set(tmpX, tmpY, tmpZ);
         }
     }
+
+    sphere.isDirty = true;
     
     mesh.geometry.verticesNeedUpdate = true;
 
@@ -345,28 +348,31 @@ function animate() {
 }
 
 function render() {
-    // Only render when in view
-    if (document.visibilityState !== "visible") {
-        console.log(document.visibilityState);
-        return;
-    }
-        
-
     stats.update();
 
-    var delta = clock.getDelta();
-    controls.update(delta);
-    camera.position.y = -1;
-
+    // Only update once things are loaded up
     if (currentLoaded == road.length - 1) {
-        progress = (progress + delta * mps) % dist;
-        currPos.setCenter(getPosition());
-        map.setCenter(currPos.getCenter());
+        var delta = clock.getDelta();
+        controls.update(delta);
+        camera.position.y = -1;
+
+        if (autoMove) {
+            progress = (progress + delta * mps) % dist;
+            currPos.setCenter(getPosition());
+            map.setCenter(currPos.getCenter());
+        }
     }
 
-    // origin.position.set(position.x, position.y, position.z);
+    // Only render when things have changed in the scene
+    if (isVisible && (controls.cameraDirty || sphere.isDirty)) {
+        sphere.isDirty = false; // need to reset this one here
+        // console.log("rendering, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
 
-    renderer.render(scene, camera);
+        renderer.render(scene, camera);
+        return;
+    }
+
+    // console.log("skipping, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
 }
 
 function loadIndex(i) {

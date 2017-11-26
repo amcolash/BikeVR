@@ -50,6 +50,10 @@ THREE.FirstPersonControls = function ( object, domElement ) {
 	this.viewHalfX = 0;
 	this.viewHalfY = 0;
 
+	this.prevRot = new THREE.Vector3();
+	this.prevPos = new THREE.Vector3();
+	this.cameraDirty = true;
+
 	if ( this.domElement !== document ) {
 
 		this.domElement.setAttribute( 'tabindex', -1 );
@@ -198,6 +202,9 @@ THREE.FirstPersonControls = function ( object, domElement ) {
 
 		}
 
+		this.prevPos.set(this.object.position.x, this.object.position.y, this.object.position.z);
+		this.prevRot.set(this.object.rotation.x, this.object.rotation.y, this.object.rotation.z);
+
 		this.mouseX *= delta * 50;
 		this.mouseY *= delta * 50;
 
@@ -264,6 +271,7 @@ THREE.FirstPersonControls = function ( object, domElement ) {
 
 		this.object.lookAt( targetPosition );
 
+		this.cameraDirty = !this.prevPos.equals(this.object.position) || !this.prevRot.equals(this.object.rotation);
 	};
 
 
