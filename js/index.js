@@ -95,6 +95,19 @@ function init() {
         // Ask the browser to lock the pointer
         document.body.requestPointerLock();
     }, false);
+
+    var mapToggle = document.getElementById("mapToggle");
+    mapToggle.addEventListener('click', function(event) {
+        if (mapToggle.textContent === "+") {
+            // show
+            mapElem.classList = "";
+            mapToggle.textContent = "-";
+        } else {
+            // hide
+            mapElem.classList = "hidden";
+            mapToggle.textContent = "+";
+        }
+    });
     
     window.addEventListener('resize', onWindowResize, false);
     document.onkeydown = checkKey;

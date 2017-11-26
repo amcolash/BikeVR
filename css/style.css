@@ -37,13 +37,19 @@ body {
     text-align: right;
 }
 
-#vr #controls button {
+#mapToggle {
     font-size: 24px;
 }
 
 #vr #map {
-    width: 200px;
-    height: 200px;
+    width: 300px;
+    height: 300px;
+    max-height: 300px;
+    transition: max-height 0.5s;  
+}
+
+#vr #map.hidden {
+    max-height: 0;
 }
 
 /* Route page */
