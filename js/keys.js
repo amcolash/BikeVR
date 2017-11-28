@@ -1,4 +1,4 @@
-var tmpVec = new THREE.Vector3();
+//var tmpVec = new THREE.Vector3();
 
 function checkKey(e) {
     e = e || window.event;
