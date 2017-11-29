@@ -80,7 +80,10 @@ function checkSphere(index) {
     if (!start && !end) {
         if (currentSphere != index) {
             currentSphere = index;
-            updateSphere(getId(currentSphere));
+            updateSphere(getId(currentSphere, currPano.getRadius()));
+
+            currPos.setCenter(getPosition());
+            map.setCenter(currPos.getCenter());
         }
     }
 }

@@ -4,7 +4,7 @@ var sphere, mesh, origin, material;
 
 var clock = new THREE.Clock();
 
-var radius = 270;
+var defaultRadius = 250;
 
 var hq = false;
 var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
@@ -217,7 +217,7 @@ function getIndex(panoId) {
     return Object.keys(panoramas).indexOf(panoId);
 }
 
-function updateSphere(panoId) {
+function updateSphere(panoId, radius) {
     if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
     if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
     if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
@@ -243,9 +243,11 @@ function updateSphere(panoId) {
         rotation -= extra;
     }
 
+    if (!radius) radius = defaultRadius;
+
     for (var y = 0; y < h; ++y) {
         for (var x = 0; x < w; ++x) {
-            c = depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50 * 255;
+            c = depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50 * radius;
 
             c = clamp(c, 0, 256);
 
