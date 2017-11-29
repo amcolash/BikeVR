@@ -11,7 +11,7 @@ var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
 var _depthLoader = new GSVPANO.PanoDepthLoader();
 
 var drawPoints = false;
-var autoMove = true;
+var autoMove = false;
 
 var depthFactor = 4;
 
@@ -97,23 +97,23 @@ function init() {
     }, false);
 
     var playToggle = document.getElementById("playToggle");
-    playToggle.textContent = autoMove ? "||" : ">";
+    playToggle.textContent = autoMove ? "⏸" : "⏵";
 
     playToggle.addEventListener('click', function (event) {
         autoMove = !autoMove;
-        playToggle.textContent = autoMove ? "||" : ">";
+        playToggle.textContent = autoMove ? "⏸" : "⏵";
     });
 
     var mapToggle = document.getElementById("mapToggle");
     mapToggle.addEventListener('click', function(event) {
-        if (mapToggle.textContent === "+") {
+        if (mapToggle.textContent === "⮝") {
             // show
             mapElem.classList = "";
-            mapToggle.textContent = "-";
+            mapToggle.textContent = "⮟";
         } else {
             // hide
             mapElem.classList = "hidden";
-            mapToggle.textContent = "+";
+            mapToggle.textContent = "⮝";
         }
     });
     
@@ -394,12 +394,12 @@ function render() {
     }
 
     // Only render when things have changed in the scene
-//     if (isVisible && (controls.cameraDirty || sphere.isDirty)) {
-//         sphere.isDirty = false; // need to reset this one here
-//         // console.log("rendering, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
-//         renderer.render(scene, camera);
-//     }
-    renderer.render(scene, camera);
+    if (isVisible && (controls.cameraDirty || sphere.isDirty)) {
+        sphere.isDirty = false; // need to reset this one here
+        // console.log("rendering, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
+        renderer.render(scene, camera);
+    }
+    // renderer.render(scene, camera);
 
     // console.log("skipping, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
 }
