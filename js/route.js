@@ -1,10 +1,11 @@
 var directionsService = new google.maps.DirectionsService();
 var minDist = 20;
 
-var markers = new Array();
+var markers = [];
 var currPano;
 var currPos;
 
+var currentSign = 1;
 var dist;
 
 var start = document.getElementById('startLocation');
@@ -36,6 +37,29 @@ if (mapElem) {
     }
 }
 
+
+function customRoute() {
+    if (start.value && start.value.length > 0 && end.value && end.value.length > 0) {
+        var request = {
+            origin: start.value,
+            destination: end.value,
+            travelMode: 'DRIVING' // May or may not have luck with street view this way
+        };
+
+        getRoute(request);
+    }
+}
+
+function defaultRoute() {
+    var request = {
+        origin: "22 E Dayton St, Madison, WI",
+        destination: "1 W Dayton St, Madison, WI",
+        travelMode: 'DRIVING' // May or may not have luck with street view this way
+    };
+
+    getRoute(request);
+}
+
 function getPosition() {
     var pos;
     if (road) {
@@ -59,6 +83,7 @@ function getPosition() {
             currPano.setRadius(currDist / 2);
 
             checkSphere(i);
+            currentSign = 1;
         } else {
             currPano.setCenter(road[i + 1]);
 
@@ -67,6 +92,7 @@ function getPosition() {
             }
 
             checkSphere(i+1);
+            currentSign = -1;
         }
 
         pos = lerpGeo(road[i], road[i + 1], delta / currDist);
@@ -86,28 +112,6 @@ function checkSphere(index) {
             map.setCenter(currPos.getCenter());
         }
     }
-}
-
-function customRoute() {
-    if (start.value && start.value.length > 0 && end.value && end.value.length > 0) {
-        var request = {
-            origin: start.value,
-            destination: end.value,
-            travelMode: 'DRIVING' // May or may not have luck with street view this way
-        };
-
-        getRoute(request);
-    }
-}
-
-function defaultRoute() {
-    var request = {
-        origin: "22 E Dayton St, Madison WI",
-        destination: "1 W Dayton St, Madison WI",
-        travelMode: 'DRIVING' // May or may not have luck with street view this way
-    };
-
-    getRoute(request);
 }
 
 function getRoute(request) {

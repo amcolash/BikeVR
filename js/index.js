@@ -4,14 +4,14 @@ var sphere, mesh, origin, material;
 
 var clock = new THREE.Clock();
 
-var defaultRadius = 250;
+var defaultRadius = 255;
 
 var hq = false;
 var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
 var _depthLoader = new GSVPANO.PanoDepthLoader();
 
 var drawPoints = false;
-var autoMove = false;
+var autoMove = true;
 
 var depthFactor = 4;
 
@@ -27,7 +27,7 @@ var markers = [];
 var currentLoaded = 0;
 var currentSphere = 0;
 
-var position = new THREE.Vector3();
+var tmpVec2 = new THREE.Vector2();
 
 defaultRoute();
 
@@ -153,7 +153,7 @@ function initListeners() {
         document.getElementById("progress").style.width = ((currentLoaded / (road.length - 2)) * 100) + "%";
 
         if (currentLoaded < road.length - 1) {
-            if (currentLoaded == 0) {
+            if (currentLoaded === 0) {
                 // Start rendering
                 animate();
 
@@ -210,9 +210,9 @@ function getId(index) {
 }
 
 function getIndex(panoId) {
-    if (!assert(panoramas[panoId] != undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
-    if (!assert(depthMaps[panoId] != undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
-    if (!assert(info[panoId] != undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
+    if (!assert(panoramas[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
+    if (!assert(depthMaps[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
+    if (!assert(info[panoId] !== undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
 
     return Object.keys(panoramas).indexOf(panoId);
 }
@@ -311,7 +311,7 @@ function updateSphere(panoId, radius) {
 function updateMarkers() {
     return;
 
-    if (markers.length == 0 || markers.length != Object.keys(info).length) {
+    if (markers.length === 0 || markers.length !== Object.keys(info).length) {
         for (var i = 0; i < markers.length; i++) {
             renderer.dispose(markers[i]);
         }
@@ -375,17 +375,23 @@ function render() {
             progress = (progress + delta * mps) % dist;
             currPos.setCenter(getPosition());
             map.setCenter(currPos.getCenter());
+            
+            tmpVec2.set(currPos.getCenter().lat() - currPano.getCenter().lat(), currPos.getCenter().lng() - currPano.getCenter().lng());
+            var angle = tmpVec2.angle();
+            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 5, -defaultRadius * 0.75, defaultRadius * 0.75);
+            
+            // TODO: something is wrong with both being cos
+            camera.position.set(-Math.cos(angle) * movement, -1, -Math.cos(angle) * movement);
         }
     }
 
     // Only render when things have changed in the scene
-    if (isVisible && (controls.cameraDirty || sphere.isDirty)) {
-        sphere.isDirty = false; // need to reset this one here
-        // console.log("rendering, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
-
-        renderer.render(scene, camera);
-        return;
-    }
+//     if (isVisible && (controls.cameraDirty || sphere.isDirty)) {
+//         sphere.isDirty = false; // need to reset this one here
+//         // console.log("rendering, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
+//         renderer.render(scene, camera);
+//     }
+    renderer.render(scene, camera);
 
     // console.log("skipping, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
 }
