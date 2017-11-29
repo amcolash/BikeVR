@@ -80,9 +80,9 @@ function init() {
     
     origin = new THREE.Mesh(
         new THREE.SphereGeometry(5, 20, 20),
-        // new THREE.MeshBasicMaterial({ color: 0x555555 })
-        new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+        new THREE.MeshBasicMaterial({ color: 0x555555 })
     );
+    origin.position.y = 20;
     scene.add(origin);
     
     if (hasVR()) {
@@ -95,6 +95,14 @@ function init() {
         // Ask the browser to lock the pointer
         document.body.requestPointerLock();
     }, false);
+
+    var playToggle = document.getElementById("playToggle");
+    playToggle.textContent = autoMove ? "||" : ">";
+
+    playToggle.addEventListener('click', function (event) {
+        autoMove = !autoMove;
+        playToggle.textContent = autoMove ? "||" : ">";
+    });
 
     var mapToggle = document.getElementById("mapToggle");
     mapToggle.addEventListener('click', function(event) {
