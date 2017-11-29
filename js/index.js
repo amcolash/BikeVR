@@ -13,6 +13,8 @@ var _depthLoader = new GSVPANO.PanoDepthLoader();
 var drawPoints = false;
 var autoMove = false;
 
+var perfMode = true;
+
 var depthFactor = 4;
 
 const WIDTH = 512 / depthFactor;
@@ -96,9 +98,15 @@ function init() {
         document.body.requestPointerLock();
     }, false);
 
+    var perfToggle = document.getElementById("perfToggle");
+    perfToggle.textContent = perfMode ? "perf" : "eco";
+    perfToggle.addEventListener('click', function (event) {
+        perfMode = !perfMode;
+        perfToggle.textContent = perfMode ? "perf" : "eco";
+    });
+
     var playToggle = document.getElementById("playToggle");
     playToggle.textContent = autoMove ? "⏸" : "⏵";
-
     playToggle.addEventListener('click', function (event) {
         autoMove = !autoMove;
         playToggle.textContent = autoMove ? "⏸" : "⏵";
@@ -394,12 +402,15 @@ function render() {
     }
 
     // Only render when things have changed in the scene
-    if (isVisible && (controls.cameraDirty || sphere.isDirty)) {
-        sphere.isDirty = false; // need to reset this one here
-        // console.log("rendering, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
+    if (perfMode) {
         renderer.render(scene, camera);
+    } else {
+        if (isVisible && (controls.cameraDirty || sphere.isDirty)) {
+            sphere.isDirty = false; // need to reset this one here
+            // console.log("rendering, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
+            renderer.render(scene, camera);
+        }
     }
-    // renderer.render(scene, camera);
 
     // console.log("skipping, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
 }
