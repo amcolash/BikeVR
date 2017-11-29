@@ -13,7 +13,7 @@ var _depthLoader = new GSVPANO.PanoDepthLoader();
 var drawPoints = false;
 var autoMove = false;
 
-var perfMode = true;
+var perfMode = false;
 
 var depthFactor = 4;
 
@@ -106,22 +106,22 @@ function init() {
     });
 
     var playToggle = document.getElementById("playToggle");
-    playToggle.textContent = autoMove ? "⏸" : "⏵";
+    playToggle.textContent = autoMove ? "||" : ">";
     playToggle.addEventListener('click', function (event) {
         autoMove = !autoMove;
-        playToggle.textContent = autoMove ? "⏸" : "⏵";
+        playToggle.textContent = autoMove ? "||" : ">";
     });
 
     var mapToggle = document.getElementById("mapToggle");
     mapToggle.addEventListener('click', function(event) {
-        if (mapToggle.textContent === "⮝") {
+        if (mapToggle.textContent === "+") {
             // show
             mapElem.classList = "";
-            mapToggle.textContent = "⮟";
+            mapToggle.textContent = "-";
         } else {
             // hide
             mapElem.classList = "hidden";
-            mapToggle.textContent = "⮝";
+            mapToggle.textContent = "+";
         }
     });
     
@@ -398,6 +398,7 @@ function render() {
             
             // TODO: something is wrong with both being cos
             camera.position.set(-Math.cos(angle) * movement, -1, -Math.cos(angle) * movement);
+            camera.updateProjectionMatrix();
         }
     }
 
