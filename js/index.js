@@ -1,6 +1,11 @@
 var container;
-var scene, camera, renderer, controls, stats, raycaster;
-var sphere, mesh, origin, material;
+var scene, camera, renderer, controls, stats, raycaster, origin;
+
+var meshArray = [];
+var sphereArray = [];
+var materialArray = [];
+var pointArray = [];
+var group = new THREE.Group();
 
 var clock = new THREE.Clock();
 
@@ -10,12 +15,18 @@ var _depthLoader = new GSVPANO.PanoDepthLoader();
 
 var defaultRadius = 255;
 var drawPoints = false;
+var wireframe = true;
 
 var perfMode = false;
 
+// Note: Depth factor MUST be power of two - since I am lazy ;)
 var depthFactor = 4;
 const WIDTH = 512 / depthFactor;
 const HEIGHT = 256 / depthFactor;
+
+// Number of segments to divide sphere into (this allows for frustum culling our sphere), MUST be power of two
+var sphereSegments = 8;
+const SEGMENT_SIZE = WIDTH / sphereSegments;
 
 var panoramas = {};
 var depthMaps = {};
@@ -31,6 +42,9 @@ var tmpVec2 = new THREE.Vector2();
 defaultRoute();
 
 function init() {
+    if(!assert(depthFactor.powerOfTwo(), { message: "Depth factor is not power of 2!", depthFactor: depthFactor })) return;
+    if(!assert(sphereSegments.powerOfTwo(), { message: "Sphere segments is not power of 2!", sphereSegments: sphereSegments })) return;
+
     container = document.createElement('div');
     document.body.appendChild(container);
 
@@ -62,17 +76,35 @@ function init() {
 
     // Hardcoded width/height since we always get the same sized depth map, assert in updating geo
     // Using a place since it is easy to make and has the UVs I am looking for
-    sphere = new THREE.PlaneGeometry(50, 50, WIDTH - 1, HEIGHT - 1);
-    material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
+    for (var i = 0; i < sphereSegments; i++) {
+        var tmpGeo = new THREE.PlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 1, HEIGHT - 1);
+        sphereArray.push(tmpGeo);
 
-    mesh = new THREE.Mesh(
-        sphere,
-        material
-    );
-    
+        var tmpMat;
+        if (wireframe) {
+            tmpMat = new THREE.MeshBasicMaterial({
+                side: THREE.DoubleSide,
+                wireframe: true,
+                wireframeLinewidth: 2,
+                color: Math.random() * 0x333333 + 0xcccccc
+            });
+        } else {
+            tmpMat = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
+        }
+        materialArray.push(tmpMat);
+
+        var tmpMesh = new THREE.Mesh(
+            tmpGeo,
+            tmpMat
+        );
+        meshArray.push(tmpMesh);
+        
+        group.add(tmpMesh);
+    }
+
     // Rotate the mesh (since I don't math)
-    mesh.rotation.x = (Math.PI / 2);
-    scene.add(mesh);
+    group.rotation.x = (Math.PI / 2);
+    scene.add(group);
     
     var light = new THREE.AmbientLight(0xffffff);
     scene.add(light);
@@ -240,8 +272,8 @@ function updateSphere(panoId, radius) {
     var w = depthMap.width / depthFactor;
     var h = depthMap.height / depthFactor;
     
-    // if (!assert(w === WIDTH, { "message": "width not equal " + WIDTH, "w": w })) return;
-    // if (!assert(h === HEIGHT, { "message": "height not eqaul " + HEIGHT, "h": h })) return;
+    if (!assert(w === WIDTH, { "message": "width not equal " + WIDTH, "w": w })) return;
+    if (!assert(h === HEIGHT, { "message": "height not eqaul " + HEIGHT, "h": h })) return;
 
     var rotation = info[panoId].rot;
     var index = getIndex(panoId);
@@ -262,8 +294,6 @@ function updateSphere(panoId, radius) {
         for (var x = 0; x < w; ++x) {
             c = depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50 * radius;
 
-            c = clamp(c, 0, 256);
-
             var xnormalize = (w - x - 1) / (w - 1);
             var ynormalize = (h - y - 1) / (h - 1);
             var theta = xnormalize * (2 * Math.PI) + rotation;
@@ -273,32 +303,53 @@ function updateSphere(panoId, radius) {
             var tmpY = c * Math.sin(phi) * Math.sin(theta);
             var tmpZ = c * Math.cos(phi);
 
-            sphere.vertices[y * w + x].set(tmpX, tmpY, tmpZ);
+            var index = Math.floor(x / SEGMENT_SIZE);
+            var newX = x % SEGMENT_SIZE;
+
+            if (newX === 0) {
+                var prevIndex = (index - 1) % sphereSegments;
+                if (prevIndex < 0) prevIndex += sphereSegments;
+
+                sphereArray[prevIndex].vertices[y * (SEGMENT_SIZE + 1) + SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+            }
+
+            sphereArray[index].vertices[y * (SEGMENT_SIZE + 1) + newX].set(tmpX, tmpY, tmpZ);
         }
     }
 
-    sphere.isDirty = true;
     
-    mesh.geometry.verticesNeedUpdate = true;
+    for (var i = 0; i < sphereSegments; i++) {
+        sphereArray[i].isDirty = true;
+        meshArray[i].geometry.verticesNeedUpdate = true;
+    }
 
-    material.map = panoramas[panoId];
-    material.needsUpdate = true;
-    material.map.needsUpdate = true;
+    // TODO: Fix materials
+    // material.map = panoramas[panoId];
+    // material.needsUpdate = true;
+    // material.map.needsUpdate = true;
 
-    // careful since this one is made every time this is called
+    // careful since this makes new geo every time this is called
+    for (var i = 0; i < pointArray.length; i++) {
+        scene.remove(pointArray[i]);
+    }
+    pointArray = [];
+
     if (drawPoints) {
-        var points = new THREE.Points(
-            sphere,
-            new THREE.PointsMaterial()
-        );
+        for (var i = 0; i < sphereSegments; i++) {
+            var points = new THREE.Points(
+                sphereArray[i],
+                new THREE.PointsMaterial()
+            );
 
-        // Rotate the mesh (since I don't math)
-        points.rotation.x = (Math.PI / 2);
-        scene.add(points);
+            // Rotate the mesh (since I don't math)
+            points.rotation.x = (Math.PI / 2);
+            scene.add(points);
+            pointArray.push(points);
+        }
     }
 
     // See if the ray from the camera into the world hits one of our meshes
-    var intersects = raycaster.intersectObject(mesh);
+    // var intersects = raycaster.intersectObject(mesh);
     // Toggle rotation bool for meshes that we clicked
     // if (intersects.length > 0) {
     //     // slightly above ground
@@ -396,7 +447,11 @@ function render() {
             // TODO: something is wrong with both being cos
             // camera.position.set(-Math.cos(angle) * movement, -1, -Math.cos(angle) * movement);
             // camera.updateProjectionMatrix();
-            mesh.position.set(Math.cos(angle) * movement, -1, Math.cos(angle) * movement);
+            group.position.set(Math.cos(angle) * movement, -1, Math.cos(angle) * movement);
+
+            for (var i = 0; i < pointArray.length; i++) {
+                pointArray[i].position.set(Math.cos(angle) * movement, -1, Math.cos(angle) * movement);
+            }
         }
     }
 
@@ -404,8 +459,17 @@ function render() {
     if (perfMode) {
         renderer.render(scene, camera);
     } else {
-        if (isVisible && (controls.cameraDirty || sphere.isDirty)) {
-            sphere.isDirty = false; // need to reset this one here
+        var sphereDirty = false;
+        for (var i = 0; i < sphereSegments; i++) {
+            sphereDirty |= sphereArray[i];
+        }
+
+        if (isVisible && (controls.cameraDirty || sphereDirty)) {
+            // need to reset this stuff here
+            for (var i = 0; i < sphereSegments; i++) {
+                sphereDirty = false;
+            }
+
             // console.log("rendering, isVisible:" + isVisible + ", controls.cameraDirty: " + controls.cameraDirty + ", sphere.isDirty:" + sphere.isDirty);
             renderer.render(scene, camera);
         }
