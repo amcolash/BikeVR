@@ -4,19 +4,16 @@ var sphere, mesh, origin, material;
 
 var clock = new THREE.Clock();
 
-var defaultRadius = 255;
-
 var hq = false;
 var _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
 var _depthLoader = new GSVPANO.PanoDepthLoader();
 
+var defaultRadius = 255;
 var drawPoints = false;
-var autoMove = false;
 
 var perfMode = false;
 
 var depthFactor = 4;
-
 const WIDTH = 512 / depthFactor;
 const HEIGHT = 256 / depthFactor;
 
@@ -397,8 +394,9 @@ function render() {
             var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 5, -defaultRadius * 0.75, defaultRadius * 0.75);
             
             // TODO: something is wrong with both being cos
-            camera.position.set(-Math.cos(angle) * movement, -1, -Math.cos(angle) * movement);
-            camera.updateProjectionMatrix();
+            // camera.position.set(-Math.cos(angle) * movement, -1, -Math.cos(angle) * movement);
+            // camera.updateProjectionMatrix();
+            mesh.position.set(Math.cos(angle) * movement, -1, Math.cos(angle) * movement);
         }
     }
 

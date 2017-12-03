@@ -1,5 +1,7 @@
 var directionsService = new google.maps.DirectionsService();
-var minDist = 20;
+var minDist = 25;
+
+var autoMove = false;
 
 var markers = [];
 var currPano;
@@ -10,8 +12,16 @@ var dist;
 
 var start = document.getElementById('startLocation');
 var end = document.getElementById('endLocation');
+var playToggle = document.getElementById('playToggle');
 if (start) startAutocomplete = new google.maps.places.Autocomplete(start);
 if (end) endAutocomplete = new google.maps.places.Autocomplete(end);
+if (start && end && playToggle) {
+    playToggle.textContent = autoMove ? "Autoplay: True" : "Autoplay: False";
+    playToggle.addEventListener('click', function (event) {
+        autoMove = !autoMove;
+        playToggle.textContent = autoMove ? "Autoplay: True" : "Autoplay: False";
+    });
+}
 
 var mapElem = document.getElementById('map');
 if (mapElem) {
@@ -28,7 +38,7 @@ if (mapElem) {
 
     if (start && end) {
         setInterval(function () {
-            if (currPano && currPos && road && road.length > 0) {
+            if (autoMove && currPano && currPos && road && road.length > 0) {
                 progress = (progress + (delta / 1000) * mps) % dist;
 
                 currPos.setCenter(getPosition());
@@ -53,7 +63,7 @@ function customRoute() {
 function defaultRoute() {
     var request = {
         origin: "22 E Dayton St, Madison, WI",
-        destination: "1 W Dayton St, Madison, WI",
+        destination: "1 W Dayton St, Madison WI",
         travelMode: 'DRIVING' // May or may not have luck with street view this way
     };
 
@@ -142,38 +152,8 @@ function getRoute(request) {
                 }
             }
 
-            // subdivide the path so that each piece has a point at least within minDist
-            newPath = [];
-            for (var i = 0; i < path.length - 1; i++) {
-                var p1 = path[i];
-                var p2 = path[i + 1];
-                var dst = measure(p1, p2);
-
-                newPath.push(p1);
-                if (dst > minDist) {
-                    var extraPoints = dst / minDist;
-                    for (var j = 1; j < extraPoints; j++) {
-                        newPath.push(lerpGeo(p1, p2, (1 / extraPoints) * j));
-                    }
-                }
-            }
-            path = newPath;
-
-            // clean up the path (with nearby points)
-            var newPath = [];
-            newPath.push(path[0]);
-            var last = path[0];
-            for (var i = 1; i < path.length - 1; i++) {
-                var p1 = path[i];
-                if (measure(last, p1) >= minDist) {
-                    newPath.push(p1);
-                    last = p1;
-                }
-            }
-            newPath.push(path[path.length - 1]);
-            path = newPath;
-
-            road = path;
+            var polyline = new google.maps.Polyline( {path: path} );
+            road = polyline.GetPointsAtDistance(minDist);
 
             // measure after everything, just to keep it simple
             dist = 0;
@@ -212,6 +192,8 @@ function getRoute(request) {
                 center: road[0],
                 radius: minDist / 4
             });
+
+            currPos.setCenter(getPosition());
 
             var bounds = new google.maps.LatLngBounds();
             for (var i = 0; i < road.length; i++) {

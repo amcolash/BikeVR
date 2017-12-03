@@ -37,7 +37,7 @@ body {
     text-align: right;
 }
 
-button {
+#controls button {
     font-size: 24px;
 }
 
@@ -69,4 +69,16 @@ button {
 
 .padding-bottom {
     padding-bottom: 10px;
+}
+
+.margin-top {
+    margin-top: 10px;
+}
+
+.margin-bottom {
+    margin-bottom: 10px;
+}
+
+.center {
+    text-align: center;
 }

@@ -29,6 +29,8 @@ function lerp(v0, v1, t) {
     return v0 * (1 - t) + v1 * t
 }
 
+// ---------------------------------- Geo Functions -----------------------------------
+
 function lerpGeo(p1, p2, value) {
     return new google.maps.LatLng(lerp(p1.lat(), p2.lat(), value), lerp(p1.lng(), p2.lng(), value));
 }
