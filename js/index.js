@@ -1,9 +1,8 @@
 var container;
-var scene, camera, renderer, controls, stats, raycaster, origin;
+var scene, camera, frustum, renderer, controls, stats, renderStats, raycaster, origin, material;
 
 var meshArray = [];
 var sphereArray = [];
-var materialArray = [];
 var pointArray = [];
 var group = new THREE.Group();
 
@@ -24,9 +23,10 @@ var depthFactor = 4;
 const WIDTH = 512 / depthFactor;
 const HEIGHT = 256 / depthFactor;
 
-// Number of segments to divide sphere into (this allows for frustum culling our sphere), MUST be power of two
+// Number of segments to divide sphere into (this allows for frustum culling our sphere), MUST be power of two, or 1
 var sphereSegments = 8;
-const SEGMENT_SIZE = WIDTH / sphereSegments;
+const WIDTH_SEGMENT_SIZE = WIDTH / sphereSegments;
+// const HEIGHT_SEGMENT_SIZE = HEIGHT / sphereSegments;
 
 var panoramas = {};
 var depthMaps = {};
@@ -38,6 +38,7 @@ var currentLoaded = 0;
 var currentSphere = 0;
 
 var tmpVec2 = new THREE.Vector2();
+var tmpMat4 = new THREE.Matrix4();
 
 defaultRoute();
 
@@ -50,6 +51,7 @@ function init() {
 
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+    frustum = new THREE.Frustum();
 
     controls = new THREE.FirstPersonControls(camera);
     controls.lookSpeed = 1.5;
@@ -63,24 +65,36 @@ function init() {
     // controls = new THREE.PointerLockControls(camera);
     // scene.add(controls.getObject());
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
     
     stats = new Stats();
     container.appendChild(stats.dom);
+
+    rendererStats = new THREEx.RendererStats();
+    rendererStats.domElement.style.position = 'absolute';
+    rendererStats.domElement.style.left = '0px';
+    rendererStats.domElement.style.top = '48px';
+    document.body.appendChild(rendererStats.domElement);
     
     raycaster = new THREE.Raycaster();
     raycaster.set(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -1, 0));
 
+    material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
+
     // Hardcoded width/height since we always get the same sized depth map, assert in updating geo
     // Using a place since it is easy to make and has the UVs I am looking for
+    var uStep = 1 / sphereSegments;
     for (var i = 0; i < sphereSegments; i++) {
-        var tmpGeo = new THREE.PlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 1, HEIGHT - 1);
+        var uStart = uStep * i;
+        var uEnd = uStep * (i + 1);
+
+        var tmpGeo = new THREE.UVPlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 1, HEIGHT - 1, uStart, uEnd, 0, 1);
         sphereArray.push(tmpGeo);
 
-        var tmpMat;
+        var tmpMat = material;
         if (wireframe) {
             tmpMat = new THREE.MeshBasicMaterial({
                 side: THREE.DoubleSide,
@@ -88,10 +102,7 @@ function init() {
                 wireframeLinewidth: 2,
                 color: Math.random() * 0x333333 + 0xcccccc
             });
-        } else {
-            tmpMat = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
         }
-        materialArray.push(tmpMat);
 
         var tmpMesh = new THREE.Mesh(
             tmpGeo,
@@ -110,7 +121,8 @@ function init() {
     scene.add(light);
     
     origin = new THREE.Mesh(
-        new THREE.SphereGeometry(5, 20, 20),
+        // new THREE.SphereGeometry(5, 20, 20),
+        new THREE.CubeGeometry(5, 5, 5),
         new THREE.MeshBasicMaterial({ color: 0x555555 })
     );
     origin.position.y = 20;
@@ -119,6 +131,10 @@ function init() {
     if (hasVR()) {
         document.body.appendChild(WEBVR.createButton(renderer));
         renderer.vr.enabled = true;
+
+        // Hide map on mobile by default
+        mapElem.classList = "hidden";
+        mapToggle.textContent = "+";
     }
     
     // controls.enabled = true;
@@ -292,7 +308,7 @@ function updateSphere(panoId, radius) {
 
     for (var y = 0; y < h; ++y) {
         for (var x = 0; x < w; ++x) {
-            c = depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50 * radius;
+            c = clamp(depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50, 0, 1) * radius;
 
             var xnormalize = (w - x - 1) / (w - 1);
             var ynormalize = (h - y - 1) / (h - 1);
@@ -303,30 +319,32 @@ function updateSphere(panoId, radius) {
             var tmpY = c * Math.sin(phi) * Math.sin(theta);
             var tmpZ = c * Math.cos(phi);
 
-            var index = Math.floor(x / SEGMENT_SIZE);
-            var newX = x % SEGMENT_SIZE;
+            var index = Math.floor(x / WIDTH_SEGMENT_SIZE);
+            var newX = x % WIDTH_SEGMENT_SIZE;
 
             if (newX === 0) {
                 var prevIndex = (index - 1) % sphereSegments;
                 if (prevIndex < 0) prevIndex += sphereSegments;
 
-                sphereArray[prevIndex].vertices[y * (SEGMENT_SIZE + 1) + SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+                sphereArray[prevIndex].vertices[y * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
             }
 
-            sphereArray[index].vertices[y * (SEGMENT_SIZE + 1) + newX].set(tmpX, tmpY, tmpZ);
+            sphereArray[index].vertices[y * (WIDTH_SEGMENT_SIZE + 1) + newX].set(tmpX, tmpY, tmpZ);
         }
     }
 
     
     for (var i = 0; i < sphereSegments; i++) {
         sphereArray[i].isDirty = true;
+        meshArray[i].geometry.computeBoundingSphere();
         meshArray[i].geometry.verticesNeedUpdate = true;
+        
+        if (!wireframe) {
+            material.map = panoramas[panoId];
+            material.map.needsUpdate = true;
+            material.needsUpdate = true;
+        }
     }
-
-    // TODO: Fix materials
-    // material.map = panoramas[panoId];
-    // material.needsUpdate = true;
-    // material.map.needsUpdate = true;
 
     // careful since this makes new geo every time this is called
     for (var i = 0; i < pointArray.length; i++) {
@@ -428,12 +446,22 @@ function animate() {
 
 function render() {
     stats.update();
+    rendererStats.update(renderer);
 
     // Only update once things are loaded up
     if (currentLoaded == road.length - 1) {
         var delta = clock.getDelta();
         controls.update(delta);
         camera.position.y = -1;
+        camera.updateProjectionMatrix();
+
+        // tmpMat4.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        // frustum.setFromMatrix(tmpMat4);
+
+        // for (var i = 0; i < meshArray.length; i++) {
+        //     meshArray[i].visible = frustum.intersectsObject(meshArray[i]);
+        //     if (!meshArray[i].visible) console.log("culling")
+        // }
 
         if (autoMove) {
             progress = (progress + delta * mps) % dist;
