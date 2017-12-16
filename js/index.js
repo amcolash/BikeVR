@@ -95,7 +95,7 @@ function init() {
             var uStart = uvStep * x;
             var uEnd = uvStep * (x + 1);
 
-            var tmpGeo = new THREE.UVPlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 1, ((HEIGHT - 1) / sphereSegments) + 0, uStart, uEnd, vStart, vEnd);
+            var tmpGeo = new THREE.UVPlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 0, ((HEIGHT - 1) / sphereSegments) + 1, uStart, uEnd, vStart, vEnd);
             sphereArray.push(tmpGeo);
 
             var tmpMat = material;
@@ -328,8 +328,8 @@ function updateSphere(panoId, radius) {
         for (var x = 0; x < w; ++x) {
             c = clamp(depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50, 0, 1) * radius;
 
-            var xnormalize = (w - x - 1) / (w - 1);
-            var ynormalize = (h - y - 1) / (h - 1);
+            var xnormalize = (w - x) / w;
+            var ynormalize = (h - y) / h;
             var theta = xnormalize * (2 * Math.PI) + rotation;
             var phi = ynormalize * Math.PI;
 
@@ -342,19 +342,30 @@ function updateSphere(panoId, radius) {
 
             var newX = x % WIDTH_SEGMENT_SIZE;
 
-            if (newX === 0) {
-                var prevIndex = (yIndex * sphereSegments + (xIndex - 1)) % (sphereSegments * sphereSegments);
+            // if (newX === 0) {
+            //     var prevIndex = (yIndex * sphereSegments + (xIndex - 1)) % (sphereSegments * sphereSegments);
+            //     if (prevIndex < 0) prevIndex += (sphereSegments * sphereSegments);
+            //
+            //     if (x === 0) {
+            //         sphereArray[(prevIndex + sphereSegments) % (sphereSegments * sphereSegments)].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+            //     } else {
+            //         sphereArray[prevIndex].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+            //     }
+            // }
+
+            if (newY === 0) {
+                var prevIndex = ((yIndex - 1) * sphereSegments + xIndex) % (sphereSegments * sphereSegments);
                 if (prevIndex < 0) prevIndex += (sphereSegments * sphereSegments);
 
-                
-                if (x === 0) {
-                    sphereArray[(prevIndex + sphereSegments) % (sphereSegments * sphereSegments)].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+                if (y === 0) {
+                    // Not great, need to rethink this part
+                    sphereArray[prevIndex].vertices[HEIGHT_SEGMENT_SIZE * WIDTH_SEGMENT_SIZE + newX].set(0, 0, 15);
                 } else {
-                    sphereArray[prevIndex].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+                    sphereArray[prevIndex].vertices[HEIGHT_SEGMENT_SIZE * WIDTH_SEGMENT_SIZE + newX].set(tmpX, tmpY, tmpZ);
                 }
             }
             
-            sphereArray[index].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + newX].set(tmpX, tmpY, tmpZ);
+            sphereArray[index].vertices[newY * (WIDTH_SEGMENT_SIZE) + newX].set(tmpX, tmpY, tmpZ);
         }
     }
 
