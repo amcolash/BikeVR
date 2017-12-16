@@ -19,7 +19,7 @@ var wireframe = true;
 var perfMode = false;
 
 // Note: Depth factor MUST be power of two - since I am lazy ;)
-var depthFactor = 4;
+var depthFactor = 16;
 const WIDTH = 512 / depthFactor;
 const HEIGHT = 256 / depthFactor;
 
@@ -95,7 +95,7 @@ function init() {
             var uStart = uvStep * x;
             var uEnd = uvStep * (x + 1);
 
-            var tmpGeo = new THREE.UVPlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 0, ((HEIGHT - 1) / sphereSegments) + 0, uStart, uEnd, vStart, vEnd);
+            var tmpGeo = new THREE.UVPlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 1, ((HEIGHT - 1) / sphereSegments) + 0, uStart, uEnd, vStart, vEnd);
             sphereArray.push(tmpGeo);
 
             var tmpMat = material;
@@ -319,7 +319,7 @@ function updateSphere(panoId, radius) {
 
     if (!radius) radius = defaultRadius;
 
-    console.log("update")
+    // console.log("update")
 
     for (var y = 0; y < h; ++y) {
         var yIndex = Math.floor(y / HEIGHT_SEGMENT_SIZE);
@@ -342,13 +342,19 @@ function updateSphere(panoId, radius) {
 
             var newX = x % WIDTH_SEGMENT_SIZE;
 
-            // if (newX === 0) {
-            //     var prevIndex = (yIndex * sphereSegments + (xIndex - 1)) % (sphereSegments * sphereSegments);
-            //     if (prevIndex < 0) prevIndex += (sphereSegments * sphereSegments);
-            //     sphereArray[prevIndex].vertices[y * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
-            // }
+            if (newX === 0) {
+                var prevIndex = (yIndex * sphereSegments + (xIndex - 1)) % (sphereSegments * sphereSegments);
+                if (prevIndex < 0) prevIndex += (sphereSegments * sphereSegments);
 
-            sphereArray[index].vertices[newY * (WIDTH_SEGMENT_SIZE + 0) + newX].set(tmpX, tmpY, tmpZ);
+                
+                if (x === 0) {
+                    sphereArray[(prevIndex + sphereSegments) % (sphereSegments * sphereSegments)].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+                } else {
+                    sphereArray[prevIndex].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+                }
+            }
+            
+            sphereArray[index].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + newX].set(tmpX, tmpY, tmpZ);
         }
     }
 
@@ -373,7 +379,7 @@ function updateSphere(panoId, radius) {
     pointArray = [];
 
     if (drawPoints) {
-        for (var i = 0; i < sphereSegments; i++) {
+        for (var i = 0; i < sphereSegments * sphereSegments; i++) {
             var points = new THREE.Points(
                 sphereArray[i],
                 new THREE.PointsMaterial()
@@ -383,7 +389,7 @@ function updateSphere(panoId, radius) {
             points.rotation.x = (Math.PI / 2);
             scene.add(points);
             pointArray.push(points);
-        }
+        } 
     }
 
     // See if the ray from the camera into the world hits one of our meshes
