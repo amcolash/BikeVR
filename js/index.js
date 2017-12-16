@@ -26,7 +26,7 @@ const HEIGHT = 256 / depthFactor;
 // Number of segments to divide sphere into (this allows for frustum culling our sphere), MUST be power of two, or 1
 var sphereSegments = 8;
 const WIDTH_SEGMENT_SIZE = WIDTH / sphereSegments;
-// const HEIGHT_SEGMENT_SIZE = HEIGHT / sphereSegments;
+const HEIGHT_SEGMENT_SIZE = HEIGHT / sphereSegments;
 
 var panoramas = {};
 var depthMaps = {};
@@ -43,8 +43,8 @@ var tmpMat4 = new THREE.Matrix4();
 defaultRoute();
 
 function init() {
-    if(!assert(depthFactor.powerOfTwo(), { message: "Depth factor is not power of 2!", depthFactor: depthFactor })) return;
-    if(!assert(sphereSegments.powerOfTwo(), { message: "Sphere segments is not power of 2!", sphereSegments: sphereSegments })) return;
+    if (!assert(depthFactor.powerOfTwo(), { message: "Depth factor is not power of 2!", depthFactor: depthFactor })) return;
+    if (!assert(sphereSegments.powerOfTwo(), { message: "Sphere segments is not power of 2!", sphereSegments: sphereSegments })) return;
 
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -61,7 +61,7 @@ function init() {
     controls.constrainVertical = true;
     controls.verticalMin = 1.0;
     controls.verticalMax = 2.0;
-    
+
     // controls = new THREE.PointerLockControls(camera);
     // scene.add(controls.getObject());
 
@@ -69,7 +69,7 @@ function init() {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
-    
+
     stats = new Stats();
     container.appendChild(stats.dom);
 
@@ -78,7 +78,7 @@ function init() {
     rendererStats.domElement.style.left = '0px';
     rendererStats.domElement.style.top = '48px';
     document.body.appendChild(rendererStats.domElement);
-    
+
     raycaster = new THREE.Raycaster();
     raycaster.set(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, -1, 0));
 
@@ -86,40 +86,45 @@ function init() {
 
     // Hardcoded width/height since we always get the same sized depth map, assert in updating geo
     // Using a place since it is easy to make and has the UVs I am looking for
-    var uStep = 1 / sphereSegments;
-    for (var i = 0; i < sphereSegments; i++) {
-        var uStart = uStep * i;
-        var uEnd = uStep * (i + 1);
+    var uvStep = 1 / sphereSegments;
+    for (var y = 0; y < sphereSegments; y++) {
+        var vStart = uvStep * y;
+        var vEnd = uvStep * (y + 1);
 
-        var tmpGeo = new THREE.UVPlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 1, HEIGHT - 1, uStart, uEnd, 0, 1);
-        sphereArray.push(tmpGeo);
+        for (var x = 0; x < sphereSegments; x++) {
+            var uStart = uvStep * x;
+            var uEnd = uvStep * (x + 1);
 
-        var tmpMat = material;
-        if (wireframe) {
-            tmpMat = new THREE.MeshBasicMaterial({
-                side: THREE.DoubleSide,
-                wireframe: true,
-                wireframeLinewidth: 2,
-                color: Math.random() * 0x333333 + 0xcccccc
-            });
+            var tmpGeo = new THREE.UVPlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 0, ((HEIGHT - 1) / sphereSegments) + 0, uStart, uEnd, vStart, vEnd);
+            sphereArray.push(tmpGeo);
+
+            var tmpMat = material;
+            if (wireframe) {
+                tmpMat = new THREE.MeshBasicMaterial({
+                    side: THREE.DoubleSide,
+                    wireframe: true,
+                    wireframeLinewidth: 2,
+                    color: Math.random() * 0x333333 + 0xcccccc
+                });
+            }
+
+            var tmpMesh = new THREE.Mesh(
+                tmpGeo,
+                tmpMat
+            );
+            meshArray.push(tmpMesh);
+
+            group.add(tmpMesh);
         }
-
-        var tmpMesh = new THREE.Mesh(
-            tmpGeo,
-            tmpMat
-        );
-        meshArray.push(tmpMesh);
-        
-        group.add(tmpMesh);
     }
 
     // Rotate the mesh (since I don't math)
     group.rotation.x = (Math.PI / 2);
     scene.add(group);
-    
+
     var light = new THREE.AmbientLight(0xffffff);
     scene.add(light);
-    
+
     origin = new THREE.Mesh(
         // new THREE.SphereGeometry(5, 20, 20),
         new THREE.CubeGeometry(5, 5, 5),
@@ -127,7 +132,7 @@ function init() {
     );
     origin.position.y = 20;
     scene.add(origin);
-    
+
     if (hasVR()) {
         document.body.appendChild(WEBVR.createButton(renderer));
         renderer.vr.enabled = true;
@@ -136,7 +141,7 @@ function init() {
         mapElem.classList = "hidden";
         mapToggle.textContent = "+";
     }
-    
+
     // controls.enabled = true;
     container.addEventListener('click', function (event) {
         // Ask the browser to lock the pointer
@@ -158,7 +163,7 @@ function init() {
     });
 
     var mapToggle = document.getElementById("mapToggle");
-    mapToggle.addEventListener('click', function(event) {
+    mapToggle.addEventListener('click', function (event) {
         if (mapToggle.textContent === "+") {
             // show
             mapElem.classList = "";
@@ -169,10 +174,10 @@ function init() {
             mapToggle.textContent = "+";
         }
     });
-    
+
     window.addEventListener('resize', onWindowResize, false);
     document.onkeydown = checkKey;
-    
+
     initListeners();
 
     loadIndex(currentLoaded);
@@ -229,9 +234,11 @@ function initListeners() {
             currentLoaded++;
             loadIndex(currentLoaded);
         } else {
-            if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
-                "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) return;
-            
+            if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, {
+                "message": "panoramas and depthMaps have different lengths",
+                "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length
+            })) return;
+
             // update markers after everything has loaded
             updateMarkers();
 
@@ -260,13 +267,19 @@ function makeTexture(panoId, data) {
 
 function getId(index) {
     if (!assert(typeof index == "number", { "message": "index provided is not a number", "index": index })) return;
-    if (!assert(index < Object.keys(panoramas).length, { "message": "index greater than panoramas.length", "index": index,
-        "panoramas.length": Object.keys(panoramas).length })) return;
-    if (!assert(index < Object.keys(depthMaps).length, { "message": "index greater than depthMaths.length", "index": index,
-        "depthMaps.length": Object.keys(depthMaps).length })) return;
-    if (!assert(index < Object.keys(info).length, { "message": "index greater than info.length", "index": index,
-        "info.length": Object.keys(info).length })) return;
-        
+    if (!assert(index < Object.keys(panoramas).length, {
+        "message": "index greater than panoramas.length", "index": index,
+        "panoramas.length": Object.keys(panoramas).length
+    })) return;
+    if (!assert(index < Object.keys(depthMaps).length, {
+        "message": "index greater than depthMaths.length", "index": index,
+        "depthMaps.length": Object.keys(depthMaps).length
+    })) return;
+    if (!assert(index < Object.keys(info).length, {
+        "message": "index greater than info.length", "index": index,
+        "info.length": Object.keys(info).length
+    })) return;
+
     return Object.keys(panoramas)[index];
 }
 
@@ -287,7 +300,7 @@ function updateSphere(panoId, radius) {
 
     var w = depthMap.width / depthFactor;
     var h = depthMap.height / depthFactor;
-    
+
     if (!assert(w === WIDTH, { "message": "width not equal " + WIDTH, "w": w })) return;
     if (!assert(h === HEIGHT, { "message": "height not eqaul " + HEIGHT, "h": h })) return;
 
@@ -306,7 +319,12 @@ function updateSphere(panoId, radius) {
 
     if (!radius) radius = defaultRadius;
 
+    console.log("update")
+
     for (var y = 0; y < h; ++y) {
+        var yIndex = Math.floor(y / HEIGHT_SEGMENT_SIZE);
+        var newY = y % HEIGHT_SEGMENT_SIZE;
+
         for (var x = 0; x < w; ++x) {
             c = clamp(depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50, 0, 1) * radius;
 
@@ -319,26 +337,28 @@ function updateSphere(panoId, radius) {
             var tmpY = c * Math.sin(phi) * Math.sin(theta);
             var tmpZ = c * Math.cos(phi);
 
-            var index = Math.floor(x / WIDTH_SEGMENT_SIZE);
+            var xIndex = Math.floor(x / WIDTH_SEGMENT_SIZE);
+            var index = yIndex * sphereSegments + xIndex;
+
             var newX = x % WIDTH_SEGMENT_SIZE;
 
-            if (newX === 0) {
-                var prevIndex = (index - 1) % sphereSegments;
-                if (prevIndex < 0) prevIndex += sphereSegments;
+            // if (newX === 0) {
+            //     var prevIndex = (yIndex * sphereSegments + (xIndex - 1)) % (sphereSegments * sphereSegments);
+            //     if (prevIndex < 0) prevIndex += (sphereSegments * sphereSegments);
+            //     sphereArray[prevIndex].vertices[y * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+            // }
 
-                sphereArray[prevIndex].vertices[y * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
-            }
-
-            sphereArray[index].vertices[y * (WIDTH_SEGMENT_SIZE + 1) + newX].set(tmpX, tmpY, tmpZ);
+            sphereArray[index].vertices[newY * (WIDTH_SEGMENT_SIZE + 0) + newX].set(tmpX, tmpY, tmpZ);
         }
     }
 
-    
+
     for (var i = 0; i < sphereSegments; i++) {
         sphereArray[i].isDirty = true;
-        meshArray[i].geometry.computeBoundingSphere();
+        // meshArray[i].geometry.computeBoundingSphere();
+        meshArray[i].geometry.computeBoundingBox();
         meshArray[i].geometry.verticesNeedUpdate = true;
-        
+
         if (!wireframe) {
             material.map = panoramas[panoId];
             material.map.needsUpdate = true;
@@ -402,7 +422,7 @@ function updateMarkers() {
 
         var size = 8;
         var marker = new THREE.BoxGeometry(size, size, size);
-        var material = new THREE.MeshPhongMaterial( {side: THREE.DoubleSide} );
+        var material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
 
         for (var i = 0; i < Object.keys(info).length; i++) {
             var mesh = new THREE.Mesh(marker, material);
@@ -418,10 +438,10 @@ function updateMarkers() {
         var markerLng = info[getId(i)].lng;
 
         var length = measure(baseLat, baseLng, markerLat, markerLng);
-        
+
         var diffLat = baseLat - markerLat;
         var diffLng = baseLng - markerLng;
-        
+
         tmpVec.set(diffLng, diffLat, 0).normalize();
 
         console.log("measure: " + length);
@@ -467,11 +487,11 @@ function render() {
             progress = (progress + delta * mps) % dist;
             currPos.setCenter(getPosition());
             map.setCenter(currPos.getCenter());
-            
+
             tmpVec2.set(currPos.getCenter().lat() - currPano.getCenter().lat(), currPos.getCenter().lng() - currPano.getCenter().lng());
             var angle = tmpVec2.angle();
             var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 5, -defaultRadius * 0.75, defaultRadius * 0.75);
-            
+
             // TODO: something is wrong with both being cos
             // camera.position.set(-Math.cos(angle) * movement, -1, -Math.cos(angle) * movement);
             // camera.updateProjectionMatrix();
