@@ -88,14 +88,14 @@ function init() {
     // Using a place since it is easy to make and has the UVs I am looking for
     var uvStep = 1 / sphereSegments;
     for (var y = 0; y < sphereSegments; y++) {
-        var vStart = uvStep * y;
-        var vEnd = uvStep * (y + 1);
+        var vStart = 1 - uvStep * y;
+        var vEnd = 1 - uvStep * (y + 1);
 
         for (var x = 0; x < sphereSegments; x++) {
             var uStart = uvStep * x;
             var uEnd = uvStep * (x + 1);
 
-            var tmpGeo = new THREE.UVPlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 0, ((HEIGHT - 1) / sphereSegments) + 1, uStart, uEnd, vStart, vEnd);
+            var tmpGeo = new THREE.UVPlaneGeometry(50, 50, ((WIDTH - 1) / sphereSegments) + 1, ((HEIGHT - 1) / sphereSegments) + 1, uStart, uEnd, vStart, vEnd);
             sphereArray.push(tmpGeo);
 
             var tmpMat = material;
@@ -326,10 +326,11 @@ function updateSphere(panoId, radius) {
         var newY = y % HEIGHT_SEGMENT_SIZE;
 
         for (var x = 0; x < w; ++x) {
-            c = clamp(depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50, 0, 1) * radius;
+            c = 255;
+            // c = clamp(depthMap.depthMap[y * depthFactor * w * depthFactor + x * depthFactor] / 50, 0, 1) * radius;
 
-            var xnormalize = (w - x) / w;
-            var ynormalize = (h - y) / h;
+            var xnormalize = (w - x - 1) / (w - 1);
+            var ynormalize = (h - y - 1) / (h - 1);
             var theta = xnormalize * (2 * Math.PI) + rotation;
             var phi = ynormalize * Math.PI;
 
@@ -342,16 +343,16 @@ function updateSphere(panoId, radius) {
 
             var newX = x % WIDTH_SEGMENT_SIZE;
 
-            // if (newX === 0) {
-            //     var prevIndex = (yIndex * sphereSegments + (xIndex - 1)) % (sphereSegments * sphereSegments);
-            //     if (prevIndex < 0) prevIndex += (sphereSegments * sphereSegments);
-            //
-            //     if (x === 0) {
-            //         sphereArray[(prevIndex + sphereSegments) % (sphereSegments * sphereSegments)].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
-            //     } else {
-            //         sphereArray[prevIndex].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
-            //     }
-            // }
+            if (newX === 0) {
+                var prevIndex = (yIndex * sphereSegments + (xIndex - 1)) % (sphereSegments * sphereSegments);
+                if (prevIndex < 0) prevIndex += (sphereSegments * sphereSegments);
+            
+                if (x === 0) {
+                    sphereArray[(prevIndex + sphereSegments) % (sphereSegments * sphereSegments)].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+                } else {
+                    sphereArray[prevIndex].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + WIDTH_SEGMENT_SIZE].set(tmpX, tmpY, tmpZ);
+                }
+            }
 
             if (newY === 0) {
                 var prevIndex = ((yIndex - 1) * sphereSegments + xIndex) % (sphereSegments * sphereSegments);
@@ -359,16 +360,36 @@ function updateSphere(panoId, radius) {
 
                 if (y === 0) {
                     // Not great, need to rethink this part
-                    sphereArray[prevIndex].vertices[HEIGHT_SEGMENT_SIZE * WIDTH_SEGMENT_SIZE + newX].set(0, 0, 15);
+                    sphereArray[prevIndex].vertices[HEIGHT_SEGMENT_SIZE * (WIDTH_SEGMENT_SIZE + 1) + newX].set(0, 0, 15);
                 } else {
-                    sphereArray[prevIndex].vertices[HEIGHT_SEGMENT_SIZE * WIDTH_SEGMENT_SIZE + newX].set(tmpX, tmpY, tmpZ);
+                    sphereArray[prevIndex].vertices[HEIGHT_SEGMENT_SIZE * (WIDTH_SEGMENT_SIZE + 1) + newX].set(tmpX, tmpY, tmpZ);
                 }
             }
             
-            sphereArray[index].vertices[newY * (WIDTH_SEGMENT_SIZE) + newX].set(tmpX, tmpY, tmpZ);
+            sphereArray[index].vertices[newY * (WIDTH_SEGMENT_SIZE + 1) + newX].set(tmpX, tmpY, tmpZ);
         }
     }
 
+    // Lazy and don't know want to fix this
+    for (var i = 0; i < sphereArray.length; i++) {
+        sphereArray[i].vertices[sphereArray[i].vertices.length - 1] = sphereArray[(i + 1) % (sphereSegments * sphereSegments)].vertices[0];
+
+        if (i == sphereArray.length - 1) {
+            sphereArray[i].vertices[sphereArray[i].vertices.length - 1] = sphereArray[(sphereSegments * sphereSegments) - 1].vertices[1];
+        }
+    }
+
+
+    for (var y = 0; y < h; ++y) {
+        var yIndex = Math.floor(y / HEIGHT_SEGMENT_SIZE);
+
+        for (var x = 0; x < w; ++x) {
+            var xIndex = Math.floor(x / WIDTH_SEGMENT_SIZE);
+            var i = yIndex * sphereSegments + xIndex;
+
+            sphereArray[i].vertices[yIndex * WIDTH_SEGMENT_SIZE + x].set(x, y, 0);
+        }
+    }
 
     for (var i = 0; i < sphereSegments; i++) {
         sphereArray[i].isDirty = true;
