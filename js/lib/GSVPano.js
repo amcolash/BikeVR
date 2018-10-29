@@ -70,7 +70,6 @@ GSVPANO.PanoLoader = function (parameters) {
 			// left corner and check for black - if so it, is too small
 			var h = Math.pow(2, _zoom - 1);
 			var data = _ctx2.getImageData(0, (h * 512) - 1, 5, 1).data;
-			console.log(data);
 			if (data.toString() === "0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255") {
 				this.canvas = _canvas1;
 				this.dimensions = 416;
