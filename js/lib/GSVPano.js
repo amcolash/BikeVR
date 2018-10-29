@@ -66,16 +66,17 @@ GSVPANO.PanoLoader = function (parameters) {
 		
 		if (_count === _total) {
 			// Decide if there is missing stuff... (416x416 or 512x512)
-			// It is a bit hacky but gets the job done
-			var data = _ctx2.getImageData(0, 0, 5, 1).data;
+			// It is a bit hacky but gets the job done. Grab the bottom
+			// left corner and check for black - if so it, is too small
+			var h = Math.pow(2, _zoom - 1);
+			var data = _ctx2.getImageData(0, (h * 512) - 1, 5, 1).data;
+			console.log(data);
 			if (data.toString() === "0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255") {
 				this.canvas = _canvas1;
 				this.dimensions = 416;
-				console.log("canvas1");
 			} else {
 				this.canvas = _canvas2;
 				this.dimensions = 512;
-				console.log("canvas2");
 			}
 
 			if (this.onPanoramaLoad) {
