@@ -14,7 +14,7 @@ var _depthLoader = new GSVPANO.PanoDepthLoader();
 
 var defaultRadius = 255;
 var drawPoints = false;
-var wireframe = true;
+var wireframe = false;
 
 var perfMode = false;
 
