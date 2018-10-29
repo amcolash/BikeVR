@@ -14,6 +14,10 @@ function checkKey(e) {
     } else if (e.keyCode == '88') {
         // X
         changeSphere(1);
+    } else if (e.keyCode == '32') {
+        var playToggle = document.getElementById("playToggle");
+        autoMove = !autoMove;
+        playToggle.textContent = autoMove ? "||" : ">";
     }
 }
 
