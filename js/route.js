@@ -9,6 +9,7 @@ var currPos;
 
 var currentSign = 1;
 var dist;
+var sphereProgress;
 
 var start = document.getElementById('startLocation');
 var end = document.getElementById('endLocation');
@@ -92,21 +93,22 @@ function getPosition() {
         if (delta < currDist / 2) {
             currPano.setCenter(road[i]);
             currPano.setRadius(currDist / 2);
-
+            
             checkSphere(i);
             currentSign = 1;
         } else {
             currPano.setCenter(road[i + 1]);
-
+            
             if (i < road.length - 2) {
                 currPano.setRadius(measure(road[i+1], road[i+2]) / 2);
             }
-
+            
             checkSphere(i+1);
             currentSign = -1;
         }
-
+        
         pos = lerpGeo(road[i], road[i + 1], delta / currDist);
+        sphereProgress = (delta / currDist) + (0.5 * currentSign);
     }
 
     return pos;

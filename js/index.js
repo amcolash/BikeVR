@@ -66,7 +66,7 @@ function init() {
 
     // Make main geo
     var geo = new THREE.SphereGeometry(sphereRadius, horizontalSphereSegments, verticalSphereSegments);
-    var mat = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+    var mat = createMaterial(false);
     mesh = new THREE.Mesh(geo, mat);
     mesh.frustumCulled = false;
     group.add(mesh);
@@ -77,6 +77,11 @@ function init() {
         var mat1 = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
         wireframeMesh = new THREE.Mesh(geo1, mat1);
         wireframeMesh.frustumCulled = false;
+
+        // I am doing this to keep the fragment
+        // and only modify the vertex shader
+        wireframeMesh.material = createMaterial(true);
+        
         group.add(wireframeMesh);
     }
 
@@ -138,13 +143,37 @@ function init() {
     loadIndex(currentLoaded);
 }
 
+function createMaterial(wireframe) {
+    var mat = new THREE.ShaderMaterial({
+        uniforms: {
+            texture: {
+                type: "t",
+                value: undefined,
+            },
+            displace: {
+                type: "t",
+                value: undefined,
+            },
+            alpha: {
+                type: "f",
+                value: 1
+            }
+        },
+        vertexShader: vertexShader,
+        fragmentShader: wireframe ? undefined : fragmentShader,
+        side: THREE.DoubleSide,
+        wireframe: wireframe,
+    });
+    mat.needsUpdate = true;
+    return mat;
+}
+
 function resetCamera() {
     camera.position.set(0, 0, -1);
     camera.rotation.set(0, 0, 0);
 }
 
 function initListeners() {
-
     _panoLoader.onPanoramaLoad = function () {
         // cache the lat/long
         info[this.panoId] = {
@@ -159,7 +188,6 @@ function initListeners() {
         // Load the next depth map
         _depthLoader.load(this.panoId);
     };
-
 
     _depthLoader.onDepthLoad = function () {
         // cache the depth map
@@ -298,34 +326,18 @@ function updateSphere(panoId, radius) {
     // group.rotation = rotation;
 
     // Make a new material and assign it to the mesh
-    mesh.material = createMaterial(texture, depthMap, false);
-    if (wireframe) wireframeMesh.material = createMaterial(texture, depthMap, true);
+    mesh.material.uniforms.texture.value = texture;
+    mesh.material.uniforms.displace.value = depthMap;
+
+    if (wireframe) {
+        wireframeMesh.material.uniforms.texture.value = texture;
+        wireframeMesh.material.uniforms.displace.value = depthMap;
+    }
 
     resetCamera();
 
     // update markers
     updateMarkers();
-}
-
-function createMaterial(texture, depthMap, wireframe) {
-    var mat = new THREE.ShaderMaterial({
-        uniforms: {
-            tTexture: {
-                type: "t",
-                value: texture,
-            },
-            tDisplace: {
-                type: "t",
-                value: depthMap,
-            },
-        },
-        vertexShader: vertexShader,
-        fragmentShader: wireframe ? undefined : fragmentShader,
-        side: THREE.DoubleSide,
-        wireframe: wireframe,
-    });
-    mat.needsUpdate = true;
-    return mat;
 }
 
 function updateMarkers() {
@@ -389,9 +401,19 @@ function render() {
         // camera.updateProjectionMatrix();
         controls.update(delta);
 
+        // M to go forward, N to go back
         var moveDir = (autoMove || keysDown["77"]) ? 1 : (keysDown["78"] ? -1 : 0);
         if (moveDir !== 0) {
             progress = (progress + delta * mps * moveDir) % dist;
+            
+            if (sphereProgress < 0.01) {
+                mesh.material.uniforms.alpha.value = sphereProgress * 100;
+            } else if (sphereProgress > 0.99) {
+                mesh.material.uniforms.alpha.value = (1 - sphereProgress) * 100;
+            } else {
+                mesh.material.uniforms.alpha.value = 1;
+            }
+
             currPos.setCenter(getPosition());
             map.setCenter(currPos.getCenter());
             
