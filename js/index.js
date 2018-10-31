@@ -101,6 +101,10 @@ function init() {
     rendererStats.domElement.style.top = '48px';
     document.body.appendChild(rendererStats.domElement);
     
+    var mapElem = document.getElementById('map');
+    var playToggle = document.getElementById('playToggle');
+    var mapToggle = document.getElementById('mapToggle');
+
     if (hasVR()) {
         document.body.appendChild(WEBVR.createButton(renderer));
         renderer.vr.enabled = true;
