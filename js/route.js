@@ -13,6 +13,7 @@ var dist;
 var start = document.getElementById('startLocation');
 var end = document.getElementById('endLocation');
 var playToggle = document.getElementById('playToggle');
+var mapToggle = document.getElementById('mapToggle');
 if (start) startAutocomplete = new google.maps.places.Autocomplete(start);
 if (end) endAutocomplete = new google.maps.places.Autocomplete(end);
 if (start && end && playToggle) {
@@ -62,7 +63,7 @@ function customRoute() {
 
 function defaultRoute() {
     var request = {
-        origin: "22 E Dayton St, Madison, WI",
+        origin: "40 E Dayton St, Madison, WI",
         destination: "1 W Dayton St, Madison WI",
         travelMode: 'DRIVING' // May or may not have luck with street view this way
     };
