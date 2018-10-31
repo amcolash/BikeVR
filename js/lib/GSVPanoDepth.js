@@ -13,43 +13,41 @@ GSVPANO.PanoDepthLoader = function (parameters) {
         url = "https://maps.google.com/cbk?output=json&cb_client=maps_sv&v=4&dm=1&pm=1&ph=1&hl=en&panoid=" + panoId;
 
         $.ajax({
-                url: url,
-                dataType: 'jsonp'
-            })
-            .done(function(data, textStatus, xhr) {
-                var decoded, depthMap;
+            url: url,
+            dataType: 'json'
+        }).done(function(data, textStatus, xhr) {
+            var decoded, depthMap;
 
-                try {
-                    decoded = self.decode(data.model.depth_map);
-                    depthMap = self.parse(decoded);
+            try {
+                decoded = self.decode(data.model.depth_map);
+                depthMap = self.parse(decoded);
 
-                    // Add the panoId to the depth map object
-                    depthMap.panoId = panoId;
-                } catch(e) {
-                    console.error("Error loading depth map for pano " + panoId + "\n" + e.message + "\nAt " + e.filename + "(" + e.lineNumber + ")");
-                    depthMap = self.createEmptyDepthMap();
-                }
-                if(self.onDepthLoad) {
-                    self.depthMap = depthMap;
-                    self.onDepthLoad();
-                }
-            })
-            .fail(function(xhr, textStatus, errorThrown) {
-                console.error("Request failed: " + url + "\n" + textStatus + "\n" + errorThrown);
-                var depthMap = self.createEmptyDepthMap();
-                if(self.onDepthLoad) {
-                    self.depthMap = depthMap;
-                    self.onDepthLoad();
-                }
-            })
+                // Add the panoId to the depth map object
+                depthMap.panoId = panoId;
+            } catch(e) {
+                console.error("Error loading depth map for pano " + panoId + "\n" + e.message + "\nAt " + e.filename + "(" + e.lineNumber + ")");
+                depthMap = self.createEmptyDepthMap();
+            }
+            if(self.onDepthLoad) {
+                self.depthMap = depthMap;
+                self.onDepthLoad();
+            }
+        }).fail(function(xhr, textStatus, errorThrown) {
+            console.error("Request failed: " + url + "\n" + textStatus + "\n" + errorThrown);
+            var depthMap = self.createEmptyDepthMap();
+            if(self.onDepthLoad) {
+                self.depthMap = depthMap;
+                self.onDepthLoad();
+            }
+        })
     }
 
     this.decode = function(rawDepthMap) {
         var self = this,
-                   i,
-                   compressedDepthMapData,
-                   depthMap,
-                   decompressedDepthMap;
+            i,
+            compressedDepthMapData,
+            depthMap,
+            decompressedDepthMap;
 
         // Append '=' in order to make the length of the array a multiple of 4
         while(rawDepthMap.length %4 != 0)

@@ -1,5 +1,10 @@
 //var tmpVec = new THREE.Vector3();
 
+// clever idea from: https://stackoverflow.com/questions/1828613/check-if-a-key-is-down
+var keysDown = {};
+window.onkeyup = function (e) { keysDown[e.keyCode] = false; checkKey(e); }
+window.onkeydown = function (e) { keysDown[e.keyCode] = true; }
+
 function checkKey(e) {
     e = e || window.event;
 
@@ -14,6 +19,10 @@ function checkKey(e) {
     } else if (e.keyCode == '88') {
         // X
         changeSphere(1);
+    } else if (e.keyCode == '32') {
+        var playToggle = document.getElementById("playToggle");
+        autoMove = !autoMove;
+        playToggle.textContent = autoMove ? "||" : ">";
     }
 }
 
