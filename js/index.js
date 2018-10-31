@@ -107,7 +107,7 @@ function init() {
 
         // Hide map on mobile by default
         mapElem.classList = "hidden";
-        mapToggle.textContent = "+";
+        mapToggle.innerText = "+";
     }
 
     // controls.enabled = true;
@@ -117,22 +117,22 @@ function init() {
     }, false);
 
     var playToggle = document.getElementById("playToggle");
-    playToggle.textContent = autoMove ? "||" : ">";
+    playToggle.innerText = autoMove ? "||" : ">";
     playToggle.addEventListener('click', function (event) {
         autoMove = !autoMove;
-        playToggle.textContent = autoMove ? "||" : ">";
+        playToggle.innerText = autoMove ? "||" : ">";
     });
 
     var mapToggle = document.getElementById("mapToggle");
     mapToggle.addEventListener('click', function (event) {
-        if (mapToggle.textContent === "+") {
+        if (mapToggle.innerText === "+") {
             // show
             mapElem.classList = "";
-            mapToggle.textContent = "-";
+            mapToggle.innerText = "-";
         } else {
             // hide
             mapElem.classList = "hidden";
-            mapToggle.textContent = "+";
+            mapToggle.innerText = "+";
         }
     });
 
