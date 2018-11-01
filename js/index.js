@@ -19,8 +19,8 @@ const wireframe = false;
 
 // Sphere setup
 const sphereRadius = 100;
-const verticalSphereSegments = 100;
-const horizontalSphereSegments = 80;
+const verticalSphereSegments = 80;
+const horizontalSphereSegments = 60;
 
 // Movement offset
 const movementSpeed = 30;
