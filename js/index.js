@@ -277,6 +277,8 @@ function createDepthMapTexture(depthMap) {
     }
 
     context.putImageData(image, 0, 0);
+    // Try to smooth out hard edges in things
+    context.filter = 'blur(6px)';
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
@@ -362,9 +364,9 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     mesh2.material.uniforms.displace.value = depthMaps[nextPanoId];
     mesh2.material.uniforms.texture.value = panoramas[nextPanoId];
 
-    // Unload previous texture (only in prod?) Seems to be ok in dev even going backwards...
-    if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
-    if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
+    // Unload previous texture (only in prod?) Seems to be ok in dev even on "reload" of texture...
+    // if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
+    // if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
 
     if (wireframe) {
         wireframeMesh.material.uniforms.displace.value = depthMap;
@@ -428,12 +430,13 @@ function onWindowResize() {
 }
 
 function render() {
+    var delta = clock.getDelta();
+
     stats.update();
     rendererStats.update(renderer);
-
+    
     // Only update once things are loaded up
     if (currentLoaded == road.length - 1) {
-        var delta = clock.getDelta();
 
         // M to go forward, N to go back
         var moveDir = (autoMove || keysDown["77"]) ? 1 : (keysDown["78"] ? -1 : 0);
