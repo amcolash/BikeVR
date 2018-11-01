@@ -119,7 +119,7 @@ function checkSphere(index) {
     if (!start && !end) {
         if (currentSphere != index) {
             currentSphere = index;
-            updateSphere(getId(currentSphere, currPano.getRadius()));
+            updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
 
             currPos.setCenter(getPosition());
             map.setCenter(currPos.getCenter());

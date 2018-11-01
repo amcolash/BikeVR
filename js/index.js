@@ -158,9 +158,29 @@ function createMaterial(wireframe) {
                 type: "t",
                 value: undefined,
             },
-            alpha: {
+            prevTexture: {
+                type: "t",
+                value: undefined,
+            },
+            prevDisplace: {
+                type: "t",
+                value: undefined,
+            },
+            nextTexture: {
+                type: "t",
+                value: undefined,
+            },
+            nextDisplace: {
+                type: "t",
+                value: undefined,
+            },
+            prevBlend: {
                 type: "f",
-                value: 1
+                value: 0
+            },
+            nextBlend: {
+                type: "f",
+                value: 0
             }
         },
         vertexShader: vertexShader,
@@ -226,7 +246,7 @@ function initListeners() {
             renderer.animate(render);
 
             // show 1st sphere
-            updateSphere(getId(currentSphere));
+            updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
 
             // hide the loading message
             document.getElementById("loading").style.display = "none";
@@ -280,6 +300,7 @@ function makeTexture(panoId, data) {
     image.onload = function () {
         texture.image = image;
         texture.minFilter = THREE.LinearFilter;
+        texture.wrapS = THREE.MirroredRepeatWrapping;
         texture.needsUpdate = true;
     };
 
@@ -289,17 +310,20 @@ function makeTexture(panoId, data) {
 function getId(index) {
     if (!assert(typeof index == "number", { "message": "index provided is not a number", "index": index })) return;
     if (!assert(index < Object.keys(panoramas).length, {
-        "message": "index greater than panoramas.length", "index": index,
+        "message": "index greater than panoramas.length",
+        "index": index,
         "panoramas.length": Object.keys(panoramas).length
-    })) return;
+    })) { console.trace(); return };
     if (!assert(index < Object.keys(depthMaps).length, {
-        "message": "index greater than depthMaths.length", "index": index,
+        "message": "index greater than depthMaths.length",
+        "index": index,
         "depthMaps.length": Object.keys(depthMaps).length
-    })) return;
+    })) { console.trace(); return };
     if (!assert(index < Object.keys(info).length, {
-        "message": "index greater than info.length", "index": index,
+        "message": "index greater than info.length",
+        "index": index,
         "info.length": Object.keys(info).length
-    })) return;
+    })) { console.trace(); return };
 
     return Object.keys(panoramas)[index];
 }
@@ -312,13 +336,10 @@ function getIndex(panoId) {
     return Object.keys(panoramas).indexOf(panoId);
 }
 
-function updateSphere(panoId, radius) {
+function updateSphere(panoId, prevPanoId, nextPanoId) {
     if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
     if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
     if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
-
-    var depthMap = depthMaps[panoId];
-    var texture = panoramas[panoId];
 
     var rotation = info[panoId].rot;
     var index = getIndex(panoId);
@@ -334,14 +355,30 @@ function updateSphere(panoId, radius) {
     }
 
     // group.rotation = rotation;
+    console.log(prevPanoId, panoId, nextPanoId)
 
-    // Make a new material and assign it to the mesh
-    mesh.material.uniforms.texture.value = texture;
+    var depthMap = depthMaps[panoId];
+    var texture = panoramas[panoId];
+
+    // Assign new textures
     mesh.material.uniforms.displace.value = depthMap;
+    mesh.material.uniforms.texture.value = texture;
+
+    mesh.material.uniforms.prevDisplace.value = depthMaps[prevPanoId];
+    mesh.material.uniforms.prevTexture.value = panoramas[prevPanoId];
+
+    mesh.material.uniforms.nextDisplace.value = depthMaps[nextPanoId];
+    mesh.material.uniforms.nextTexture.value = panoramas[nextPanoId];
 
     if (wireframe) {
-        wireframeMesh.material.uniforms.texture.value = texture;
         wireframeMesh.material.uniforms.displace.value = depthMap;
+        wireframeMesh.material.uniforms.texture.value = texture;
+
+        wireframeMesh.material.uniforms.prevDisplace.value = depthMap;
+        wireframeMesh.material.uniforms.prevTexture.value = texture;
+
+        wireframeMesh.material.uniforms.nextDisplace.value = depthMap;
+        wireframeMesh.material.uniforms.nextTexture.value = texture;
     }
 
     resetCamera();
@@ -415,21 +452,15 @@ function render() {
         var moveDir = (autoMove || keysDown["77"]) ? 1 : (keysDown["78"] ? -1 : 0);
         if (moveDir !== 0) {
             progress = (progress + delta * mps * moveDir) % dist;
-            
-            if (sphereProgress < 0.01) {
-                mesh.material.uniforms.alpha.value = sphereProgress * 100;
-            } else if (sphereProgress > 0.99) {
-                mesh.material.uniforms.alpha.value = (1 - sphereProgress) * 100;
-            } else {
-                mesh.material.uniforms.alpha.value = 1;
-            }
+
+            console.log(sphereProgress, mesh.material.uniforms.prevBlend.value, mesh.material.uniforms.nextBlend.value);
 
             currPos.setCenter(getPosition());
             map.setCenter(currPos.getCenter());
 
             tmpVec2.set(currPos.getCenter().lat() - currPano.getCenter().lat(), currPos.getCenter().lng() - currPano.getCenter().lng());
             var angle = tmpVec2.angle();
-            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 5, -sphereRadius * 0.8, sphereRadius * 0.8) * movementSpeed;
+            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 4.5, 0, sphereRadius * 0.5) * movementSpeed;
             
             // console.log("angle", angle)
             // console.log("movement", movement)
@@ -442,6 +473,18 @@ function render() {
             // for (var i = 0; i < pointArray.length; i++) {
             //     pointArray[i].position.set(Math.cos(angle) * movement, -1, Math.cos(angle) * movement);
             // }
+        }
+
+        var alphaBlend = 0.12;
+        if (sphereProgress < alphaBlend) {
+            mesh.material.uniforms.prevBlend.value = 1 - (sphereProgress * (1 / alphaBlend));
+            mesh.material.uniforms.nextBlend.value = 0;
+        } else if (sphereProgress > 1 - alphaBlend) {
+            mesh.material.uniforms.prevBlend.value = 0;
+            mesh.material.uniforms.nextBlend.value = 1 - ((1 - sphereProgress) * (1 / alphaBlend));
+        } else {
+            mesh.material.uniforms.prevBlend.value = 0;
+            mesh.material.uniforms.nextBlend.value = 0;
         }
     }
 
