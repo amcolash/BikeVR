@@ -1,5 +1,5 @@
 var container;
-var scene, camera, mesh, wireframeMesh, group, renderer, controls, stats, rendererStats;
+var scene, camera, mesh1, mesh2, wireframeMesh, group, renderer, controls, stats, rendererStats;
 
 const hq = false;
 
@@ -47,29 +47,30 @@ function init() {
     document.body.appendChild(container);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10000);
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
 
     controls = new THREE.FirstPersonControls(camera);
     controls.lookSpeed = 1.25;
     controls.movementSpeed = 300;
-    // controls.noFly = true;
     controls.lookVertical = true;
     controls.constrainVertical = true;
     controls.verticalMin = 1.0;
     controls.verticalMax = 2.0;
     controls.autoSpeedFactor = 0.5;
 
-    // controls = new THREE.PointerLockControls(camera);
-    // scene.add(controls.getObject());
-
     group = new THREE.Group();
 
     // Make main geo
     var geo = new THREE.SphereGeometry(sphereRadius, horizontalSphereSegments, verticalSphereSegments);
-    var mat = createMaterial(false);
-    mesh = new THREE.Mesh(geo, mat);
-    mesh.frustumCulled = false;
-    group.add(mesh);
+    var mat1 = createMaterial(false);
+    mesh1 = new THREE.Mesh(geo, mat1);
+    mesh1.frustumCulled = false;
+    group.add(mesh1);
+
+    var mat2 = createMaterial(false);
+    mesh2 = new THREE.Mesh(geo, mat2);
+    mesh2.frustumCulled = false;
+    group.add(mesh2);
 
     if (wireframe) {
         // Make wireframe mesh
@@ -158,26 +159,6 @@ function createMaterial(wireframe) {
                 type: "t",
                 value: undefined,
             },
-            prevTexture: {
-                type: "t",
-                value: undefined,
-            },
-            prevDisplace: {
-                type: "t",
-                value: undefined,
-            },
-            nextTexture: {
-                type: "t",
-                value: undefined,
-            },
-            nextDisplace: {
-                type: "t",
-                value: undefined,
-            },
-            prevBlend: {
-                type: "f",
-                value: 0
-            },
             nextBlend: {
                 type: "f",
                 value: 0
@@ -187,14 +168,19 @@ function createMaterial(wireframe) {
         fragmentShader: wireframe ? undefined : fragmentShader,
         side: THREE.DoubleSide,
         wireframe: wireframe,
+        blending: THREE.NormalBlending,
+        depthTest: false,
+        depthWrite: false,
+        transparent: true
     });
     mat.needsUpdate = true;
     return mat;
 }
 
 function resetCamera() {
-    camera.position.set(0, 0, -1);
+    camera.position.set(0, -80, 0);
     camera.rotation.set(0, 0, 0);
+    camera.updateProjectionMatrix();
 }
 
 function initListeners() {
@@ -242,20 +228,26 @@ function initListeners() {
                 return;
             }
 
-            // start rendering
-            renderer.animate(render);
+            // hide the loading messages
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("progress").style.display = "none";
 
             // show 1st sphere
             updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
 
-            // hide the loading message
-            document.getElementById("loading").style.display = "none";
-            
             // update markers after everything has loaded
             updateMarkers();
 
-            // Hide loading message
-            document.getElementById("progress").style.display = "none";
+            var panoId = getId(0);
+            var depthMap = depthMaps[panoId];
+            var texture = panoramas[panoId];
+
+            // Assign new textures
+            mesh1.material.uniforms.displace.value = depthMap;
+            mesh1.material.uniforms.texture.value = texture;
+
+            // start rendering
+            renderer.animate(render);
         }
     };
 }
@@ -286,7 +278,11 @@ function createDepthMapTexture(depthMap) {
 
     context.putImageData(image, 0, 0);
 
-    return new THREE.CanvasTexture(canvas);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
+    
+    return texture;
 }
 
 function makeTexture(panoId, data) {
@@ -300,7 +296,6 @@ function makeTexture(panoId, data) {
     image.onload = function () {
         texture.image = image;
         texture.minFilter = THREE.LinearFilter;
-        texture.wrapS = THREE.MirroredRepeatWrapping;
         texture.needsUpdate = true;
     };
 
@@ -355,30 +350,25 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     }
 
     // group.rotation = rotation;
-    console.log(prevPanoId, panoId, nextPanoId)
+    // console.log(prevPanoId, panoId, nextPanoId)
 
     var depthMap = depthMaps[panoId];
     var texture = panoramas[panoId];
 
-    // Assign new textures
-    mesh.material.uniforms.displace.value = depthMap;
-    mesh.material.uniforms.texture.value = texture;
+    // // Assign new textures
+    mesh1.material.uniforms.displace.value = depthMap;
+    mesh1.material.uniforms.texture.value = texture;
 
-    mesh.material.uniforms.prevDisplace.value = depthMaps[prevPanoId];
-    mesh.material.uniforms.prevTexture.value = panoramas[prevPanoId];
+    mesh2.material.uniforms.displace.value = depthMaps[nextPanoId];
+    mesh2.material.uniforms.texture.value = panoramas[nextPanoId];
 
-    mesh.material.uniforms.nextDisplace.value = depthMaps[nextPanoId];
-    mesh.material.uniforms.nextTexture.value = panoramas[nextPanoId];
+    // Unload previous texture (only in prod?) Seems to be ok in dev even going backwards...
+    if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
+    if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
 
     if (wireframe) {
         wireframeMesh.material.uniforms.displace.value = depthMap;
         wireframeMesh.material.uniforms.texture.value = texture;
-
-        wireframeMesh.material.uniforms.prevDisplace.value = depthMap;
-        wireframeMesh.material.uniforms.prevTexture.value = texture;
-
-        wireframeMesh.material.uniforms.nextDisplace.value = depthMap;
-        wireframeMesh.material.uniforms.nextTexture.value = texture;
     }
 
     resetCamera();
@@ -444,50 +434,42 @@ function render() {
     // Only update once things are loaded up
     if (currentLoaded == road.length - 1) {
         var delta = clock.getDelta();
-        camera.position.y = -1;
-        // camera.updateProjectionMatrix();
-        controls.update(delta);
 
         // M to go forward, N to go back
         var moveDir = (autoMove || keysDown["77"]) ? 1 : (keysDown["78"] ? -1 : 0);
         if (moveDir !== 0) {
             progress = (progress + delta * mps * moveDir) % dist;
-
-            console.log(sphereProgress, mesh.material.uniforms.prevBlend.value, mesh.material.uniforms.nextBlend.value);
-
-            currPos.setCenter(getPosition());
-            map.setCenter(currPos.getCenter());
-
-            tmpVec2.set(currPos.getCenter().lat() - currPano.getCenter().lat(), currPos.getCenter().lng() - currPano.getCenter().lng());
-            var angle = tmpVec2.angle();
-            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 4.5, 0, sphereRadius * 0.5) * movementSpeed;
-            
-            // console.log("angle", angle)
-            // console.log("movement", movement)
-
-            // TODO: something is wrong with both being cos
-            // camera.position.set(-Math.cos(angle) * movement, -1, -Math.cos(angle) * movement);
-            // camera.updateProjectionMatrix();
-            group.position.set(Math.cos(angle) * movement, -1, 0 * Math.cos(angle) * movement);
-
-            // for (var i = 0; i < pointArray.length; i++) {
-            //     pointArray[i].position.set(Math.cos(angle) * movement, -1, Math.cos(angle) * movement);
-            // }
         }
 
-        var alphaBlend = 0.12;
-        if (sphereProgress < alphaBlend) {
-            mesh.material.uniforms.prevBlend.value = 1 - (sphereProgress * (1 / alphaBlend));
-            mesh.material.uniforms.nextBlend.value = 0;
-        } else if (sphereProgress > 1 - alphaBlend) {
-            mesh.material.uniforms.prevBlend.value = 0;
-            mesh.material.uniforms.nextBlend.value = 1 - ((1 - sphereProgress) * (1 / alphaBlend));
+        // console.log(sphereProgress, mesh.material.uniforms.prevBlend.value, mesh.material.uniforms.nextBlend.value);
+
+        currPos.setCenter(getPosition());
+        map.setCenter(currPos.getCenter());
+
+        tmpVec2.set(currPos.getCenter().lat() - currPano.getCenter().lat(), currPos.getCenter().lng() - currPano.getCenter().lng());
+        var angle = tmpVec2.angle();
+        var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 4.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
+
+        mesh1.position.set(Math.cos(angle) * movement, -1, 0 * Math.cos(angle) * movement);
+        mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, 0);
+
+        var alphaBlend = 0.03;
+        // if (sphereProgress < alphaBlend) {
+        //     mesh1.material.uniforms.prevBlend.value = 1 - (sphereProgress * (1 / alphaBlend));
+        //     mesh1.material.uniforms.nextBlend.value = 0;
+        //     mesh2.visible = true;
+        if (sphereProgress > 1 - alphaBlend) {
+            mesh1.material.uniforms.nextBlend.value = (1 - sphereProgress) * (1 / alphaBlend);
+            mesh2.material.uniforms.nextBlend.value = 1 - ((1 - sphereProgress) * (1 / alphaBlend));
+            mesh2.visible = true;
         } else {
-            mesh.material.uniforms.prevBlend.value = 0;
-            mesh.material.uniforms.nextBlend.value = 0;
+            mesh1.material.uniforms.nextBlend.value = 1;
+            mesh2.material.uniforms.nextBlend.value = 0;
+            mesh2.visible = false;
         }
     }
 
+    controls.update(delta);
     renderer.render(scene, camera);
 }
 

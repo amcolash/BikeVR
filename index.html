@@ -25,10 +25,6 @@
 		<!-- Shaders! -->
 		<script type="x-shader/x-vertex" id="vertexShader">
 			uniform sampler2D displace;
-			uniform sampler2D prevDisplace;
-			uniform sampler2D nextDisplace;
-			uniform float prevBlend;
-			uniform float nextBlend;
 			
 			varying vec2 vUv;
 
@@ -37,34 +33,20 @@
 				vec2 inverseUV = vec2(max(uv.x - 0.5, 0.5 - uv.x), uv.y);
 				vec4 vPosition = modelViewMatrix * vec4(position.xyz, 1.0);
 				vec3 vNormal = normalize(normalMatrix * normal);
-				vec3 displacementVector = mix(texture2D(displace, vUv).xyz, texture2D(nextDisplace, inverseUV).xyz, nextBlend);
+				vec3 displacementVector = texture2D(displace, vUv).xyz;
 				float df = 20.0 * displacementVector.x;
-				//df = 15.0;
 				vec4 displacedPosition = vec4(vNormal.xyz * df, 0.0) + (vPosition / 250.0);
 				gl_Position = projectionMatrix * displacedPosition;
 			}
 		</script>
 		<script type="x-shader/x-fragment" id="fragmentShader">
 			uniform sampler2D texture;
-			uniform sampler2D prevTexture;
-			uniform sampler2D nextTexture;
-			uniform sampler2D displace;
-			uniform sampler2D prevDisplace;
-			uniform sampler2D nextDisplace;
-			uniform float prevBlend;
 			uniform float nextBlend;
 			
 			varying vec2 vUv;
 
 			void main() {
-				//vec4 color = mix(texture2D(texture, vUv), texture2D(nextTexture, vUv), 0.0);
-				vec2 inverseUV = vec2(1.0 - vUv.x, vUv.y);
-				vec2 inverseUV2 = vec2(-vUv.x, vUv.y);
-				inverseUV = vUv;
-				vec4 color = vec4(mix(texture2D(texture, vUv).xyz, texture2D(prevTexture, inverseUV).xyz, prevBlend), 1.0);
-				color.xyz = mix(color.xyz, texture2D(nextTexture, inverseUV2).xyz, nextBlend);
-
-				color.xyz = mix(texture2D(texture, vUv).xyz, texture2D(nextTexture, vUv).xyz, nextBlend);
+				vec4 color = vec4(texture2D(texture, vUv).rgb, nextBlend);
 				gl_FragColor = color;
 			}
 		</script>
