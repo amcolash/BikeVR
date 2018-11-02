@@ -47,13 +47,13 @@ function init() {
     document.body.appendChild(container);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 20000);
 
     controls = new THREE.FirstPersonControls(camera);
     controls.lookSpeed = 1.25;
     controls.movementSpeed = 300;
     controls.lookVertical = true;
-    controls.constrainVertical = true;
+    // controls.constrainVertical = true;
     controls.verticalMin = 1.0;
     controls.verticalMax = 2.0;
     controls.autoSpeedFactor = 0.5;
@@ -75,8 +75,8 @@ function init() {
     if (wireframe) {
         // Make wireframe mesh
         var geo1 = new THREE.SphereGeometry(sphereRadius - 2, horizontalSphereSegments, verticalSphereSegments);
-        var mat1 = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
-        wireframeMesh = new THREE.Mesh(geo1, mat1);
+        var mat3 = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+        wireframeMesh = new THREE.Mesh(geo1, mat3);
         wireframeMesh.frustumCulled = false;
 
         // I am doing this to keep the fragment
@@ -277,8 +277,6 @@ function createDepthMapTexture(depthMap) {
     }
 
     context.putImageData(image, 0, 0);
-    // Try to smooth out hard edges in things
-    context.filter = 'blur(6px)';
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
