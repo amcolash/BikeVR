@@ -14,6 +14,10 @@ GSVPANO.PanoLoader = function (parameters) {
 		_ctx1 = _canvas1.getContext('2d'),
 		_canvas2 = document.createElement('canvas'),
 		_ctx2 = _canvas2.getContext('2d'),
+		_canvas3 = document.createElement('canvas'),
+		_ctx3 = _canvas3.getContext('2d'),
+		_canvas4 = document.createElement('canvas'),
+		_ctx4 = _canvas4.getContext('2d'),
 		cacheBust = false,
 		rotation = 0,
 		copyright = '',
@@ -56,7 +60,7 @@ GSVPANO.PanoLoader = function (parameters) {
 	};
 
 	this.composeFromTile = function (x, y, texture) {
-	
+		
 		_ctx1.drawImage(texture, x * 512, y * 512);
 		_ctx2.drawImage(texture, x * 512, y * 512);
 		_count++;
@@ -67,9 +71,10 @@ GSVPANO.PanoLoader = function (parameters) {
 		if (_count === _total) {
 			// Decide if there is missing stuff... (416x416 or 512x512)
 			// It is a bit hacky but gets the job done. Grab the bottom
-			// left corner and check for black - if so it, is too small
+			// left corner and check for black - if so it is too small
 			var h = Math.pow(2, _zoom - 1);
 			var data = _ctx2.getImageData(0, (h * 512) - 1, 5, 1).data;
+			
 			if (data.toString() === "0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255") {
 				this.canvas = _canvas1;
 				this.dimensions = 416;
@@ -100,18 +105,43 @@ GSVPANO.PanoLoader = function (parameters) {
 		_count = 0;
 		_total = w * h;
 		
+		var failed = window.localStorage.getItem('failedImages');
+		failed = failed ? JSON.parse(failed) : [];
+
 		for( y = 0; y < h; y++) {
 			for( x = 0; x < w; x++) {
 				url = 'http://maps.google.com/cbk?output=tile&panoid=' + _panoId + '&zoom=' + _zoom + '&x=' + x + '&y=' + y;
 				if (this.cacheBust) url += '&' + Date.now();
-				(function (x, y) { 
-					var img = new Image();
-					img.addEventListener('load', function () {
-						self.composeFromTile(x, y, this);
-					});
-					img.crossOrigin = '';
-					img.src = url;
-				})(x, y);
+
+				if (!failed.includes(url)) {
+					(function (x, y, url) { 
+						var img = new Image();
+						img.addEventListener('load', function () {
+							// Check if image "failed" but got into here
+							_canvas3.width = 512;
+							_canvas3.height = 512;
+							_ctx3.drawImage(this, 0, 0);
+							var data = _ctx3.getImageData(20, 20, 5, 1).data;
+
+							if (data.toString() === "0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255") {
+								var failedImages = window.localStorage.getItem('failedImages');
+								failedImages = failedImages ? JSON.parse(failedImages) : [];
+								failedImages.push(url);
+								window.localStorage.setItem('failedImages', JSON.stringify(failedImages));
+							}
+
+							self.composeFromTile(x, y, this);
+						});
+						img.crossOrigin = '';
+						img.src = url;
+					})(x, y, url);
+				} else {
+					_canvas4.width = 512;
+					_canvas4.height = 512;
+					_ctx4.fillStyle = "black";
+					_ctx4.fillRect(0, 0, 512, 512);
+					self.composeFromTile(x, y, _canvas4);
+				}
 			}
 		}
 		
