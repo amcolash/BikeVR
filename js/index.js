@@ -1,7 +1,7 @@
 var container;
 var scene, camera, mesh1, mesh2, wireframeMesh, renderer, controls, stats, rendererStats;
 
-const hq = true;
+const hq = false;
 const perf = false;
 
 const clock = new THREE.Clock();
@@ -20,8 +20,8 @@ const wireframe = false;
 
 // Sphere setup
 const sphereRadius = 100;
-const verticalSphereSegments = 80;
-const horizontalSphereSegments = 60;
+const verticalSphereSegments = 70;
+const horizontalSphereSegments = 50;
 
 // Movement offset
 const movementSpeed = 30;
@@ -69,7 +69,7 @@ function init() {
     controls.autoSpeedFactor = 0.5;
 
     // Make main geo
-    var geo = new THREE.SphereGeometry(sphereRadius, horizontalSphereSegments, verticalSphereSegments);
+    var geo = new THREE.SphereBufferGeometry(sphereRadius, horizontalSphereSegments, verticalSphereSegments);
     var mat1 = createMaterial(false);
     mesh1 = new THREE.Mesh(geo, mat1);
     mesh1.frustumCulled = false;
@@ -82,7 +82,7 @@ function init() {
 
     if (wireframe) {
         // Make wireframe mesh
-        var geo1 = new THREE.SphereGeometry(sphereRadius - 2, horizontalSphereSegments, verticalSphereSegments);
+        var geo1 = new THREE.SphereBufferGeometry(sphereRadius - 2, horizontalSphereSegments, verticalSphereSegments);
         var mat3 = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
         wireframeMesh = new THREE.Mesh(geo1, mat3);
         wireframeMesh.frustumCulled = false;
@@ -380,8 +380,8 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     mesh2.material.uniforms.texture.value = panoramas[nextPanoId];
 
     // Unload previous texture (only in prod?) Seems to be ok in dev even on "reload" of texture...
-    // if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
-    // if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
+    if (depthMaps[prevPanoId] && hq) depthMaps[prevPanoId].dispose();
+    if (panoramas[prevPanoId] && hq) panoramas[prevPanoId].dispose();
 
     if (wireframe) {
         wireframeMesh.material.uniforms.displace.value = depthMap;
