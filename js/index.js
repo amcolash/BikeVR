@@ -1,7 +1,8 @@
 var container;
 var scene, camera, mesh1, mesh2, wireframeMesh, renderer, controls, stats, rendererStats;
 
-const hq = false;
+const hq = true;
+const perf = false;
 
 const clock = new THREE.Clock();
 const _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
@@ -37,6 +38,7 @@ var currentSphere = 0;
 var tmpVec2 = new THREE.Vector2();
 
 window.onload = function() {
+    if (perf) console.time("fully loaded");
     var params = decodeParameters(window.location.search);
     if (params.startLat && params.startLng && params.endLat && params.endLng) {
         var start = params.startLat + ", " + params.startLng;
@@ -49,6 +51,7 @@ window.onload = function() {
 
 // Called after we have gotten a route with g-maps
 function init() {
+    if (perf) console.time("init");
 
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -147,6 +150,7 @@ function init() {
     
     initListeners();
 
+    if (perf) console.timeEnd("init");
     loadIndex(currentLoaded);
 }
 
@@ -195,7 +199,7 @@ function initListeners() {
         };
 
         // Keep track of this texture
-        makeTexture(this.panoId, this.canvas.toDataURL());
+        makeTexture(this.panoId, this.canvas);
 
         // Load the next depth map
         _depthLoader.load(this.panoId);
@@ -248,6 +252,8 @@ function initListeners() {
             mesh1.material.uniforms.displace.value = depthMap;
             mesh1.material.uniforms.texture.value = texture;
 
+            if (perf) console.timeEnd("fully loaded");
+
             // start rendering
             renderer.animate(render);
         }
@@ -255,6 +261,7 @@ function initListeners() {
 }
 
 function createDepthMapTexture(depthMap) {
+    if (perf) console.time("createDepthMap");
     var x, y, canvas, context, image, w, h, c;
 
     canvas = document.createElement("canvas");
@@ -283,25 +290,33 @@ function createDepthMapTexture(depthMap) {
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
     texture.needsUpdate = true;
-    
+
+    if (perf) console.timeEnd("createDepthMap");
     return texture;
 }
 
-function makeTexture(panoId, data) {
+function makeTexture(panoId, canvas) {
+    if (perf) console.time("makeTexture");
+
+    var newCanvas = document.createElement('canvas');
+    var context = newCanvas.getContext('2d');
+
+    //set dimensions
+    newCanvas.width = canvas.width;
+    newCanvas.height = canvas.height;
+
+    //apply the old canvas to the new one
+    context.drawImage(canvas, 0, 0);
+
     // Connect the image to the Texture
-    const texture = new THREE.Texture();
+    const texture = new THREE.CanvasTexture(newCanvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
 
     // cache the texture
     panoramas[panoId] = texture;
 
-    var image = new Image();
-    image.onload = function () {
-        texture.image = image;
-        texture.minFilter = THREE.LinearFilter;
-        texture.needsUpdate = true;
-    };
-
-    image.src = data;
+    if (perf) console.timeEnd("makeTexture");
 }
 
 function getId(index) {

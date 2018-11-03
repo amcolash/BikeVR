@@ -58,14 +58,10 @@ GSVPANO.PanoDepthLoader = function (parameters) {
         rawDepthMap = rawDepthMap.replace(/_/g,'/');
 
         // Decode and decompress data
-        compressedDepthMapData = $.base64.decode(rawDepthMap);
-        decompressedDepthMap = zpipe.inflate(compressedDepthMapData);
+        compressedDepthMapData = window.atob(rawDepthMap);
+        decompressedDepthMap = pako.inflate(compressedDepthMapData);
 
-        // Convert output of decompressor to Uint8Array
-        depthMap = new Uint8Array(decompressedDepthMap.length);
-        for(i=0; i<decompressedDepthMap.length; ++i)
-            depthMap[i] = decompressedDepthMap.charCodeAt(i);
-        return depthMap;
+        return decompressedDepthMap;
     }
 
     this.parseHeader = function(depthMap) {
