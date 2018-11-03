@@ -1,5 +1,5 @@
 var container;
-var scene, camera, mesh1, mesh2, wireframeMesh, group, renderer, controls, stats, rendererStats;
+var scene, camera, mesh1, mesh2, wireframeMesh, renderer, controls, stats, rendererStats;
 
 const hq = false;
 
@@ -65,19 +65,17 @@ function init() {
     controls.verticalMax = 2.0;
     controls.autoSpeedFactor = 0.5;
 
-    group = new THREE.Group();
-
     // Make main geo
     var geo = new THREE.SphereGeometry(sphereRadius, horizontalSphereSegments, verticalSphereSegments);
     var mat1 = createMaterial(false);
     mesh1 = new THREE.Mesh(geo, mat1);
     mesh1.frustumCulled = false;
-    group.add(mesh1);
+    scene.add(mesh1);
 
     var mat2 = createMaterial(false);
     mesh2 = new THREE.Mesh(geo, mat2);
     mesh2.frustumCulled = false;
-    group.add(mesh2);
+    scene.add(mesh2);
 
     if (wireframe) {
         // Make wireframe mesh
@@ -89,11 +87,8 @@ function init() {
         // I am doing this to keep the fragment
         // and only modify the vertex shader
         wireframeMesh.material = createMaterial(true);
-        
-        group.add(wireframeMesh);
+        scene.add(wireframeMesh);
     }
-
-    scene.add(group);
 
     renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -356,8 +351,8 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
         rotation -= extra;
     }
 
-    // group.rotation = rotation;
-    // console.log(prevPanoId, panoId, nextPanoId)
+    // mesh1.rotation.set(0, rotation, 0);
+    // console.log(rotation)
 
     var depthMap = depthMaps[panoId];
     var texture = panoramas[panoId];
@@ -459,7 +454,7 @@ function render() {
         var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 4.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
 
         mesh1.position.set(Math.cos(angle) * movement, -1, 0 * Math.cos(angle) * movement);
-        mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, 0);
+        mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, mesh1.position.z - Math.cos(angle) * sphereRadius * 35);
 
         var alphaBlend = 0.03;
         // if (sphereProgress < alphaBlend) {
