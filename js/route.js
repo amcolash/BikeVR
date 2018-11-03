@@ -15,6 +15,13 @@ var start = document.getElementById('startLocation');
 var end = document.getElementById('endLocation');
 var playToggle = document.getElementById('playToggle');
 var mapToggle = document.getElementById('mapToggle');
+var routeLength = document.getElementById('routeLength');
+var directionsButton = document.getElementById('directions');
+var startButton = document.getElementById('forward');
+
+if (directionsButton) directionsButton.addEventListener('click', () => customRoute());
+if (startButton) startButton.addEventListener('click', () => startRoute());
+
 if (start) startAutocomplete = new google.maps.places.Autocomplete(start);
 if (end) endAutocomplete = new google.maps.places.Autocomplete(end);
 if (start && end && playToggle) {
@@ -50,11 +57,11 @@ if (mapElem) {
 }
 
 
-function customRoute() {
-    if (start.value && start.value.length > 0 && end.value && end.value.length > 0) {
+function customRoute(customStart, customEnd) {
+    if ((customStart && customEnd) || (start.value && start.value.length > 0 && end.value && end.value.length > 0)) {
         var request = {
-            origin: start.value,
-            destination: end.value,
+            origin: customStart || start.value,
+            destination: customEnd || end.value,
             travelMode: 'DRIVING' // May or may not have luck with street view this way
         };
 
@@ -70,6 +77,14 @@ function defaultRoute() {
     };
 
     getRoute(request);
+}
+
+function startRoute() {
+    var startLocation = road[0];
+    var endLocation = road[road.length - 1];
+    var startString = 'startLat=' + startLocation.lat() + '&startLng=' + startLocation.lng();
+    var endString = 'endLat=' + endLocation.lat() + '&endLng=' + endLocation.lng();
+    window.location.href = '/?' + startString + '&' + endString;
 }
 
 function getPosition() {
@@ -163,6 +178,16 @@ function getRoute(request) {
             for (var i = 0; i < road.length - 1; i++) {
                 dist += measure(road[i], road[i + 1]);
             }
+
+            var km = (dist / 1000).toFixed(2);
+            var miles = ((dist / 1000) * 0.621371).toFixed(2);
+            var time = (miles / 10 * 60).toFixed(0);
+
+            if (routeLength) {
+                routeLength.innerHTML = "Route Length: " + road.length + " stops, " + time + " minutes, " + miles + " miles, " + km + " km";
+            }
+
+            if (startButton) startButton.disabled = false;
 
             // start things up (for the rendering/strret view side) after we have loaded the path
             if (typeof init === "function") {

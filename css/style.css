@@ -60,6 +60,7 @@ body {
 #route #map {
     width: 100%;
     height: 800px;
+    margin: 10px 0;
 }
 
 /* Utiltiy */

@@ -37,7 +37,14 @@ var currentSphere = 0;
 var tmpVec2 = new THREE.Vector2();
 
 window.onload = function() {
-    defaultRoute();
+    var params = decodeParameters(window.location.search);
+    if (params.startLat && params.startLng && params.endLat && params.endLng) {
+        var start = params.startLat + ", " + params.startLng;
+        var end = params.endLat + ", " + params.endLng;
+        customRoute(start, end);
+    } else {
+        defaultRoute();
+    }
 }
 
 // Called after we have gotten a route with g-maps

@@ -11,18 +11,19 @@
 
 <body>
     <div id="route" class="center">
-        <form class="padding-bottom" onsubmit="customRoute(); return false;">
-            <span>Start:</span>
-            <input type="text" size="50" id="startLocation" value="22 E Dayton St, Madison WI">
-    
-            <span>End:</span>
-            <input type="text" size="50" id="endLocation" value="424 W Mifflin St, Madison WI">
-    
-            <input type="submit" value="Get Route"></input>
-        </form>
-    
+        <span>Start:</span>
+        <input type="text" size="50" id="startLocation" value="22 E Dayton St, Madison WI">
+
+        <span>End:</span>
+        <input type="text" size="50" id="endLocation" value="424 W Mifflin St, Madison WI">
+
+        <button id="directions">Get Route</button>
+        <button id="forward" disabled>Ride It!</button>
+
         <div id="map"></div>
 
+        <span id="routeLength"></span>
+        <br>
         <button id="playToggle" class="margin-top">Autoplay: False</button>
     </div>
 
