@@ -355,7 +355,7 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
     if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
 
-    var rotation = info[panoId].rot;
+    var rotation = -info[panoId].rot;
     var index = getIndex(panoId);
 
     if (index > 0 && index < road.length) {
@@ -365,11 +365,19 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
         } else {
             extra -= google.maps.geometry.spherical.computeHeading(road[index - 1], road[index]).toRad();
         }
-        rotation -= extra;
+        // rotation -= extra;
     }
 
-    // mesh1.rotation.set(0, rotation, 0);
-    // console.log(rotation)
+    console.log(rotation);
+    if ((index + 1) < road.length) {
+        rotation += google.maps.geometry.spherical.computeHeading(road[index], road[index + 1]).toRad();
+    } else {
+        rotation += google.maps.geometry.spherical.computeHeading(road[index-1], road[index]).toRad();
+    }
+    console.log(rotation);
+
+    mesh1.rotation.set(0, rotation, 0);
+    mesh2.rotation.set(0, rotation, 0);
 
     var depthMap = depthMaps[panoId];
     var texture = panoramas[panoId];
@@ -459,19 +467,20 @@ function render() {
         var moveDir = (autoMove || keysDown["77"]) ? 1 : (keysDown["78"] ? -1 : 0);
         if (moveDir !== 0) {
             progress = (progress + delta * mps * moveDir) % dist;
+
+
+            // console.log(sphereProgress, mesh.material.uniforms.prevBlend.value, mesh.material.uniforms.nextBlend.value);
+
+            currPos.setCenter(getPosition());
+            map.setCenter(currPos.getCenter());
+
+            tmpVec2.set(currPos.getCenter().lat() - currPano.getCenter().lat(), currPos.getCenter().lng() - currPano.getCenter().lng());
+            var angle = tmpVec2.angle();
+            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 3.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
+
+            mesh1.position.set(Math.cos(angle) * movement, -1, 0 * Math.cos(angle) * movement);
+            mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, 0);
         }
-
-        // console.log(sphereProgress, mesh.material.uniforms.prevBlend.value, mesh.material.uniforms.nextBlend.value);
-
-        currPos.setCenter(getPosition());
-        map.setCenter(currPos.getCenter());
-
-        tmpVec2.set(currPos.getCenter().lat() - currPano.getCenter().lat(), currPos.getCenter().lng() - currPano.getCenter().lng());
-        var angle = tmpVec2.angle();
-        var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 3.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
-
-        mesh1.position.set(Math.cos(angle) * movement, -1, 0 * Math.cos(angle) * movement);
-        mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, 0);
 
         // if (sphereProgress < alphaBlend) {
         //     mesh1.material.uniforms.prevBlend.value = 1 - (sphereProgress * (1 / alphaBlend));
