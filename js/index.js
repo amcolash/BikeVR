@@ -355,29 +355,23 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
     if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
 
-    var rotation = -info[panoId].rot;
     var index = getIndex(panoId);
-
-    if (index > 0 && index < road.length) {
-        var extra = google.maps.geometry.spherical.computeHeading(road[index - 1], road[index]).toRad();
-        if (index > 1) {
-            extra -= google.maps.geometry.spherical.computeHeading(road[index - 2], road[index - 1]).toRad();
-        } else {
-            extra -= google.maps.geometry.spherical.computeHeading(road[index - 1], road[index]).toRad();
-        }
-        // rotation -= extra;
-    }
-
-    console.log(rotation);
+    var rotation = -info[panoId].rot;
     if ((index + 1) < road.length) {
         rotation += google.maps.geometry.spherical.computeHeading(road[index], road[index + 1]).toRad();
     } else {
         rotation += google.maps.geometry.spherical.computeHeading(road[index-1], road[index]).toRad();
     }
-    console.log(rotation);
-
     mesh1.rotation.set(0, rotation, 0);
-    mesh2.rotation.set(0, rotation, 0);
+
+    var nextIndex = getIndex(nextPanoId);
+    var nextRotation = -info[nextPanoId].rot;
+    if ((nextIndex + 1) < road.length) {
+        nextRotation += google.maps.geometry.spherical.computeHeading(road[nextIndex], road[nextIndex + 1]).toRad();
+    } else {
+        nextRotation += google.maps.geometry.spherical.computeHeading(road[nextIndex - 1], road[nextIndex]).toRad();
+    }
+    mesh2.rotation.set(0, nextRotation, 0);
 
     var depthMap = depthMaps[panoId];
     var texture = panoramas[panoId];
