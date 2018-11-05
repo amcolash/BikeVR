@@ -18,9 +18,11 @@ var mapToggle = document.getElementById('mapToggle');
 var routeLength = document.getElementById('routeLength');
 var directionsButton = document.getElementById('directions');
 var startButton = document.getElementById('forward');
+var backButton = document.getElementById('back');
 
 if (directionsButton) directionsButton.addEventListener('click', () => customRoute());
 if (startButton) startButton.addEventListener('click', () => startRoute());
+if (backButton) backButton.addEventListener('click', () => window.location.href = '/route.html');
 
 if (start) startAutocomplete = new google.maps.places.Autocomplete(start);
 if (end) endAutocomplete = new google.maps.places.Autocomplete(end);

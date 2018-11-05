@@ -33,6 +33,12 @@ body {
     right: 20px;
 }
 
+#back {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
 #vr #controls {
     text-align: right;
 }
