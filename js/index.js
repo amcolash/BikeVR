@@ -1,5 +1,5 @@
 var container;
-var scene, camera, mesh1, mesh2, wireframeMesh, renderer, controls, stats, rendererStats;
+var scene, sceneHUD, camera, cameraHUD, mesh1, mesh2, wireframeMesh, textureHUD, contextHUD, renderer, controls, stats, rendererStats;
 
 const hq = false;
 const perf = false;
@@ -59,7 +59,8 @@ function init() {
     document.body.appendChild(container);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 20000);
+    sceneHUD = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 20000);
 
     controls = new THREE.FirstPersonControls(camera);
     controls.lookSpeed = 1.25;
@@ -95,7 +96,40 @@ function init() {
         scene.add(wireframeMesh);
     }
 
+    WebFont.load({
+        google: {
+            families: ['Mukta Mahee']
+        },
+        active: function () {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            cameraHUD = new THREE.OrthographicCamera(
+                -width / 2, width / 2,
+                height / 2, -height / 2,
+                0, 30
+            );
+
+            var canvas = document.createElement("canvas");
+            contextHUD = canvas.getContext('2d');
+
+            canvas.width = 2048;
+            canvas.height = 2048;
+
+            contextHUD.fillStyle = "rgba(255, 255, 255, 0.5)";
+            contextHUD.font = '140px Mukta Mahee';
+            contextHUD.textBaseline = 'top';
+            contextHUD.fillText('TEST', 30, height - 200);
+
+            var geometry = new THREE.PlaneGeometry(width, height);
+            textureHUD = new THREE.CanvasTexture(canvas, { minFilter: THREE.LinearFilter });
+            var material = new THREE.MeshBasicMaterial({ map: textureHUD, transparent: true });
+
+            sceneHUD.add(new THREE.Mesh(geometry, material));
+        }
+    });
+
     renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.autoClear = false;
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
@@ -178,7 +212,6 @@ function createMaterial(wireframe) {
         wireframe: wireframe,
         blending: THREE.NormalBlending,
         depthTest: false,
-        depthWrite: false,
         transparent: true
     });
     mat.needsUpdate = true;
@@ -291,7 +324,6 @@ function createDepthMapTexture(depthMap) {
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
-    texture.needsUpdate = true;
 
     if (perf) console.timeEnd("createDepthMap");
     return texture;
@@ -313,7 +345,6 @@ function makeTexture(panoId, canvas) {
     // Connect the image to the Texture
     const texture = new THREE.CanvasTexture(newCanvas);
     texture.minFilter = THREE.LinearFilter;
-    texture.needsUpdate = true;
 
     // cache the texture
     panoramas[panoId] = texture;
@@ -360,18 +391,22 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     if ((index + 1) < road.length) {
         rotation += google.maps.geometry.spherical.computeHeading(road[index], road[index + 1]).toRad();
     } else {
-        rotation += google.maps.geometry.spherical.computeHeading(road[index-1], road[index]).toRad();
+        rotation += google.maps.geometry.spherical.computeHeading(road[index - 1], road[index]).toRad();
     }
     mesh1.rotation.set(0, rotation, 0);
 
-    var nextIndex = getIndex(nextPanoId);
-    var nextRotation = -info[nextPanoId].rot;
-    if ((nextIndex + 1) < road.length) {
-        nextRotation += google.maps.geometry.spherical.computeHeading(road[nextIndex], road[nextIndex + 1]).toRad();
+    if (nextPanoId) {
+        var nextIndex = getIndex(nextPanoId);
+        var nextRotation = -info[nextPanoId].rot;
+        if ((nextIndex + 1) < road.length) {
+            nextRotation += google.maps.geometry.spherical.computeHeading(road[nextIndex], road[nextIndex + 1]).toRad();
+        } else {
+            nextRotation += google.maps.geometry.spherical.computeHeading(road[nextIndex - 1], road[nextIndex]).toRad();
+        }
+        mesh2.rotation.set(0, nextRotation, 0);
     } else {
-        nextRotation += google.maps.geometry.spherical.computeHeading(road[nextIndex - 1], road[nextIndex]).toRad();
+        mesh2.rotation.set(0, rotation, 0);
     }
-    mesh2.rotation.set(0, nextRotation, 0);
 
     var depthMap = depthMaps[panoId];
     var texture = panoramas[panoId];
@@ -472,8 +507,12 @@ function render() {
             var angle = tmpVec2.angle();
             var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 3.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
 
-            mesh1.position.set(Math.cos(angle) * movement, -1, 0 * Math.cos(angle) * movement);
+            mesh1.position.set(Math.cos(angle) * movement, -1, 0);
             mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, 0);
+
+            contextHUD.clearRect(0, 0, 2048, 2048);
+            contextHUD.fillText(delta, 30, window.innerHeight - 200);
+            textureHUD.needsUpdate = true;
         }
 
         // if (sphereProgress < alphaBlend) {
@@ -492,7 +531,9 @@ function render() {
     }
 
     controls.update(delta);
+
     renderer.render(scene, camera);
+    renderer.render(sceneHUD, cameraHUD);
 }
 
 function loadIndex(i) {
