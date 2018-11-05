@@ -24,7 +24,9 @@ const verticalSphereSegments = 70;
 const horizontalSphereSegments = 50;
 
 // Movement offset
-const movementSpeed = 30;
+const movementSpeed = 40;
+
+const alphaBlend = 0.05;
 
 var panoramas = {};
 var depthMaps = {};
@@ -193,9 +195,9 @@ function initListeners() {
     _panoLoader.onPanoramaLoad = function () {
         // cache the lat/long
         info[this.panoId] = {
-            "lat": this.lat,
-            "lng": this.lng,
-            "rot": this.rotation
+            lat: this.lat,
+            lng: this.lng,
+            rot: this.rotation
         };
 
         // Keep track of this texture
@@ -466,12 +468,11 @@ function render() {
 
         tmpVec2.set(currPos.getCenter().lat() - currPano.getCenter().lat(), currPos.getCenter().lng() - currPano.getCenter().lng());
         var angle = tmpVec2.angle();
-        var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 4.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
+        var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 3.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
 
         mesh1.position.set(Math.cos(angle) * movement, -1, 0 * Math.cos(angle) * movement);
-        mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, mesh1.position.z - Math.cos(angle) * sphereRadius * 35);
+        mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, 0);
 
-        var alphaBlend = 0.03;
         // if (sphereProgress < alphaBlend) {
         //     mesh1.material.uniforms.prevBlend.value = 1 - (sphereProgress * (1 / alphaBlend));
         //     mesh1.material.uniforms.nextBlend.value = 0;
