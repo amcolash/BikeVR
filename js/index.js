@@ -32,6 +32,8 @@ var panoramas = {};
 var depthMaps = {};
 var info = {};
 
+var hudInfo = {};
+
 var markers = [];
 
 var currentLoaded = 0;
@@ -109,22 +111,20 @@ function init() {
                 0, 30
             );
 
-            var canvas = document.createElement("canvas");
-            contextHUD = canvas.getContext('2d');
+            hudInfo.canvas = document.createElement("canvas");
+            contextHUD = hudInfo.canvas.getContext('2d');
 
-            canvas.width = 2048;
-            canvas.height = 2048;
-
-            contextHUD.fillStyle = "rgba(255, 255, 255, 0.5)";
-            contextHUD.font = '140px Mukta Mahee';
-            contextHUD.textBaseline = 'top';
-            contextHUD.fillText('TEST', 30, height - 200);
+            hudInfo.canvas.width = 2048;
+            hudInfo.canvas.height = 2048;
 
             var geometry = new THREE.PlaneGeometry(width, height);
-            textureHUD = new THREE.CanvasTexture(canvas, { minFilter: THREE.LinearFilter });
+            textureHUD = new THREE.CanvasTexture(hudInfo.canvas, { minFilter: THREE.LinearFilter });
             var material = new THREE.MeshBasicMaterial({ map: textureHUD, transparent: true });
 
             sceneHUD.add(new THREE.Mesh(geometry, material));
+
+            initInfo();
+            updateInfo(0);
         }
     });
 
@@ -352,6 +352,29 @@ function makeTexture(panoId, canvas) {
     if (perf) console.timeEnd("makeTexture");
 }
 
+function initInfo() {
+    hudInfo.infoWidth = 700;
+    hudInfo.infoHeight = 550;
+    hudInfo.fontSize = 50;
+    hudInfo.updateSpeed = 3;
+
+    contextHUD.fillStyle = "rgba(255, 255, 255, 0.75)";
+    contextHUD.font = hudInfo.fontSize + 'px Mukta Mahee';
+    contextHUD.textBaseline = 'top';
+    const text = "Seattle ( ( listen) see-AT-\u0259l) is a seaport city on the west coast of the United States. It  is the seat of King County, Washington. With an estimated 730,000 residents as of  2018, Seattle is the largest city in both the state of Washington and the Pacific Northwest region of North America. According to U.S. Census data released in 2018, the Seattle metropolitan area\u2019s population stands at 3.87 million, and ranks as the 15th largest in the United States. In July 2013, it was the fastest-growing major city in the United States and remained in the Top 5 in May 2015 with an annual growth rate of 2.1%.";
+    hudInfo.lines = wrapCanvasText(text, hudInfo.fontSize, hudInfo.infoWidth, contextHUD);
+}
+
+function updateInfo(offset) {
+    contextHUD.clearRect(hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight, hudInfo.infoWidth, hudInfo.infoHeight);
+    for (var i = offset, len = hudInfo.lines.length; i < len; i++) {
+        if ((i - offset) * hudInfo.fontSize < (hudInfo.infoHeight - hudInfo.fontSize)) {
+            contextHUD.fillText(hudInfo.lines[i], hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight + ((i - offset) * hudInfo.fontSize));
+        }
+    }
+    if (textureHUD) textureHUD.needsUpdate = true;
+}
+
 function getId(index) {
     if (!assert(typeof index == "number", { "message": "index provided is not a number", "index": index })) return;
     if (!assert(index < Object.keys(panoramas).length, {
@@ -483,8 +506,17 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+var counter = 0;
+var index = 0;
 function render() {
     var delta = clock.getDelta();
+
+    counter += delta;
+    if (counter > hudInfo.updateSpeed) {
+        counter = 0;
+        index = (index + 1) % hudInfo.lines.length;
+        updateInfo(index);
+    }
 
     stats.update();
     rendererStats.update(renderer);

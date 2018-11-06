@@ -68,3 +68,35 @@ function measureGeo(lat1, lon1, lat2, lon2) {
     var d = R * c;
     return d * 1000; // meters
 }
+
+// ---------------------------------- Canvas Functions --------------------------------
+
+// Shamelessly stolen from: https://codepen.io/ashblue/pen/fGkma
+function wrapCanvasText(text, fontSize, width, ctx) {
+    var lines = [];
+    var line = '';
+    var lineTest = '';
+    var words = text.split(' ');
+
+    ctx.font = fontSize + 'px Arial';
+
+    for (var i = 0, len = words.length; i < len; i++) {
+        lineTest = line + words[i] + ' ';
+
+        // Check total width of line or last word
+        if (ctx.measureText(lineTest).width > width) {
+            // Record and reset the current line
+            lines.push(line);
+            line = words[i] + ' ';
+        } else {
+            line = lineTest;
+        }
+    }
+
+    // Catch last line in-case something is left over
+    if (line.length > 0) {
+        lines.push(line.trim());
+    }
+
+    return lines;
+}
