@@ -7,6 +7,9 @@ var markers = [];
 var currPano;
 var currPos;
 
+var progress = 0; // in meters traveled
+var velocity = 17; // km/hr (about 10mph)
+
 var currentSign = 1;
 var dist;
 var sphereProgress;
@@ -41,15 +44,12 @@ if (mapElem) {
         center: { lat: 39.50, lng: -98.35 } // center of us
     });
 
-    var progress = 0; // in meters traveled
-    var velocity = 17; // km/hr (about 10mph)
-    var mps = velocity * 1000 / 3600; // m/s
-
     var delta = 100; // milliseconds
 
     if (start && end) {
         setInterval(function () {
             if (autoMove && currPano && currPos && road && road.length > 0) {
+                var mps = velocity * 1000 / 3600;
                 progress = (progress + (delta / 1000) * mps) % dist;
 
                 currPos.setCenter(getPosition());

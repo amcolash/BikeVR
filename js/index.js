@@ -124,7 +124,6 @@ function init() {
             sceneHUD.add(new THREE.Mesh(geometry, material));
 
             initInfo();
-            updateInfo(0);
         }
     });
 
@@ -289,6 +288,9 @@ function initListeners() {
 
             if (perf) console.timeEnd("fully loaded");
 
+            // Start the clock ticking
+            clock.getDelta();
+
             // start rendering
             renderer.animate(render);
         }
@@ -357,6 +359,8 @@ function initInfo() {
     hudInfo.infoHeight = 550;
     hudInfo.fontSize = 50;
     hudInfo.updateSpeed = 3;
+    hudInfo.fps = 60;
+    hudInfo.frame = 16;
 
     contextHUD.fillStyle = "rgba(255, 255, 255, 0.75)";
     contextHUD.font = hudInfo.fontSize + 'px Mukta Mahee';
@@ -365,7 +369,7 @@ function initInfo() {
     hudInfo.lines = wrapCanvasText(text, hudInfo.fontSize, hudInfo.infoWidth, contextHUD);
 }
 
-function updateInfo(index, counter) {
+function updateInfo(index, counter, delta) {
     if (perf) console.timeEnd("updateInfo");
     contextHUD.clearRect(hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight - hudInfo.fontSize, hudInfo.infoWidth, hudInfo.infoHeight + hudInfo.fontSize);
     for (var i = index, len = hudInfo.lines.length; i < len; i++) {
@@ -374,6 +378,21 @@ function updateInfo(index, counter) {
             contextHUD.fillText(hudInfo.lines[i], hudInfo.fontSize, yValue);
         }
     }
+
+    var samples = 30;
+
+    hudInfo.fps -= (hudInfo.fps / samples);
+    hudInfo.fps += ((1 / delta) / samples);
+    
+    hudInfo.frame -= (hudInfo.frame / samples);
+    hudInfo.frame += ((delta * 1000) / samples);
+
+    var offset = 230;
+    contextHUD.clearRect(hudInfo.canvas.width - offset, hudInfo.fontSize, offset, hudInfo.fontSize * 3);
+    contextHUD.fillText((hudInfo.fps).toFixed(0) + " fps", hudInfo.canvas.width - offset, hudInfo.fontSize);
+    contextHUD.fillText((hudInfo.frame).toFixed(0) + " ms", hudInfo.canvas.width - offset, hudInfo.fontSize * 2);
+    contextHUD.fillText(velocity.toFixed(1) + " m/s", hudInfo.canvas.width - offset, hudInfo.fontSize * 3);
+
     if (textureHUD) textureHUD.needsUpdate = true;
     if (perf) console.timeEnd("updateInfo");
 }
@@ -519,7 +538,8 @@ function render() {
         counter = 0;
         index = (index + 1) % hudInfo.lines.length;
     }
-    updateInfo(index, counter / hudInfo.updateSpeed);
+    // Add a tiny extra to delta so that we never get NaN
+    updateInfo(index, counter / hudInfo.updateSpeed, delta);
 
     stats.update();
     rendererStats.update(renderer);
@@ -527,9 +547,20 @@ function render() {
     // Only update once things are loaded up
     if (currentLoaded == road.length - 1) {
 
+        // key K
+        if (keysDown["75"]) {
+            velocity -= 0.1;
+        }
+
+        // Key L
+        if (keysDown["76"]) {
+            velocity += 0.1;
+        }
+
         // M to go forward, N to go back
         var moveDir = (autoMove || keysDown["77"]) ? 1 : (keysDown["78"] ? -1 : 0);
         if (moveDir !== 0) {
+            var mps = velocity * 1000 / 3600;
             progress = (progress + delta * mps * moveDir) % dist;
 
 
@@ -544,10 +575,6 @@ function render() {
 
             mesh1.position.set(Math.cos(angle) * movement, -1, 0);
             mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, 0);
-
-            contextHUD.clearRect(0, 0, 2048, 2048);
-            contextHUD.fillText(delta, 30, window.innerHeight - 200);
-            textureHUD.needsUpdate = true;
         }
 
         // if (sphereProgress < alphaBlend) {
