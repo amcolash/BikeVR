@@ -365,14 +365,17 @@ function initInfo() {
     hudInfo.lines = wrapCanvasText(text, hudInfo.fontSize, hudInfo.infoWidth, contextHUD);
 }
 
-function updateInfo(offset) {
-    contextHUD.clearRect(hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight, hudInfo.infoWidth, hudInfo.infoHeight);
-    for (var i = offset, len = hudInfo.lines.length; i < len; i++) {
-        if ((i - offset) * hudInfo.fontSize < (hudInfo.infoHeight - hudInfo.fontSize)) {
-            contextHUD.fillText(hudInfo.lines[i], hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight + ((i - offset) * hudInfo.fontSize));
+function updateInfo(index, counter) {
+    if (perf) console.timeEnd("updateInfo");
+    contextHUD.clearRect(hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight - hudInfo.fontSize, hudInfo.infoWidth, hudInfo.infoHeight + hudInfo.fontSize);
+    for (var i = index, len = hudInfo.lines.length; i < len; i++) {
+        if ((i - index) * hudInfo.fontSize < (hudInfo.infoHeight - hudInfo.fontSize)) {
+            var yValue = hudInfo.canvas.height - hudInfo.infoHeight + ((i - index) * hudInfo.fontSize) + -counter * hudInfo.fontSize;
+            contextHUD.fillText(hudInfo.lines[i], hudInfo.fontSize, yValue);
         }
     }
     if (textureHUD) textureHUD.needsUpdate = true;
+    if (perf) console.timeEnd("updateInfo");
 }
 
 function getId(index) {
@@ -515,8 +518,8 @@ function render() {
     if (counter > hudInfo.updateSpeed) {
         counter = 0;
         index = (index + 1) % hudInfo.lines.length;
-        updateInfo(index);
     }
+    updateInfo(index, counter / hudInfo.updateSpeed);
 
     stats.update();
     rendererStats.update(renderer);
