@@ -98,34 +98,7 @@ function init() {
         scene.add(wireframeMesh);
     }
 
-    WebFont.load({
-        google: {
-            families: ['Mukta Mahee']
-        },
-        active: function () {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            cameraHUD = new THREE.OrthographicCamera(
-                -width / 2, width / 2,
-                height / 2, -height / 2,
-                0, 30
-            );
-
-            hudInfo.canvas = document.createElement("canvas");
-            contextHUD = hudInfo.canvas.getContext('2d');
-
-            hudInfo.canvas.width = 2048;
-            hudInfo.canvas.height = 2048;
-
-            var geometry = new THREE.PlaneGeometry(width, height);
-            textureHUD = new THREE.CanvasTexture(hudInfo.canvas, { minFilter: THREE.LinearFilter });
-            var material = new THREE.MeshBasicMaterial({ map: textureHUD, transparent: true });
-
-            sceneHUD.add(new THREE.Mesh(geometry, material));
-
-            initInfo();
-        }
-    });
+    initInfo();
 
     renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.autoClear = false;
@@ -354,7 +327,30 @@ function makeTexture(panoId, canvas) {
     if (perf) console.timeEnd("makeTexture");
 }
 
+// TODO: Actually query based on current city
+// Info: https://en.wikipedia.org/w/api.php?action=help&modules=query%2Bextracts
+// Endpoint: https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exsentences=5&exintro&explaintext&titles=Seattle
 function initInfo() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    cameraHUD = new THREE.OrthographicCamera(
+        -width / 2, width / 2,
+        height / 2, -height / 2,
+        0, 30
+    );
+
+    hudInfo.canvas = document.createElement("canvas");
+    contextHUD = hudInfo.canvas.getContext('2d');
+
+    hudInfo.canvas.width = 2048;
+    hudInfo.canvas.height = 2048;
+
+    var geometry = new THREE.PlaneGeometry(width, height);
+    textureHUD = new THREE.CanvasTexture(hudInfo.canvas, { minFilter: THREE.LinearFilter });
+    var material = new THREE.MeshBasicMaterial({ map: textureHUD, transparent: true });
+
+    sceneHUD.add(new THREE.Mesh(geometry, material));
+
     hudInfo.infoWidth = 700;
     hudInfo.infoHeight = 550;
     hudInfo.fontSize = 50;
@@ -363,7 +359,7 @@ function initInfo() {
     hudInfo.frame = 16;
 
     contextHUD.fillStyle = "rgba(255, 255, 255, 0.75)";
-    contextHUD.font = hudInfo.fontSize + 'px Mukta Mahee';
+    contextHUD.font = hudInfo.fontSize + 'px sans';
     contextHUD.textBaseline = 'top';
     const text = "Seattle ( ( listen) see-AT-\u0259l) is a seaport city on the west coast of the United States. It  is the seat of King County, Washington. With an estimated 730,000 residents as of  2018, Seattle is the largest city in both the state of Washington and the Pacific Northwest region of North America. According to U.S. Census data released in 2018, the Seattle metropolitan area\u2019s population stands at 3.87 million, and ranks as the 15th largest in the United States. In July 2013, it was the fastest-growing major city in the United States and remained in the Top 5 in May 2015 with an annual growth rate of 2.1%.";
     hudInfo.lines = wrapCanvasText(text, hudInfo.fontSize, hudInfo.infoWidth, contextHUD);
