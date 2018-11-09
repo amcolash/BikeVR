@@ -6,10 +6,16 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Bluetooth Test</title>
 </head>
-<body>
+<body style="font-family: sans-serif;">
     <button id="start">Start</button>
     <button id="stop">Stop</button>
-    <div id="log" style="border: 1px solid black; padding: 10px; margin: 10px;"></div>
+
+    <div id="info" style="display: none;">
+        <h2>Stats</h2>
+        <div id="stats"></div>
+        <hr>
+        <div id="log" style="padding: 10px; margin: 10px;"></div>
+    </div>
 
     <script src="js/bluetooth.js"></script>
 </body>
