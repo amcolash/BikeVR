@@ -9,7 +9,7 @@ stopButton.addEventListener('click', onStopButtonClick);
 const UINT16_MAX = 65536;  // 2^16
 const UINT32_MAX = 4294967296;  // 2^32
 
-var characteristic, wheelSize, previousSample, currentSample, hasWheel, hasCrank;
+var characteristic, wheelSize, previousSample, currentSample, data, hasWheel, hasCrank, startDistance;
 
 window.onload = updateWheel;
 
@@ -108,13 +108,13 @@ function handleNotifications(event) {
     // data += "Last Crank Time: " + currentSample.crankTime;
     // console.log(data);
     
-    var currentStats = calculateStats();
+    calculateStats();
 
-    if (currentStats) {
-        var data = "Cadence (rpm): " + currentStats.cadenceinRPM.toFixed(1) + "\n";
-        data += "Distance (km): " + currentStats.distanceinKM.toFixed(2) + "\n";
-        data += "Speed (km/hr): " + currentStats.speedInKMPerHour.toFixed(1);
-        stats.innerText = data;
+    if (data) {
+        var info = "Cadence (rpm): " + data.cadence.toFixed(1) + "\n";
+        info += "Distance (km): " + data.distance.toFixed(2) + "\n";
+        info += "Speed (km/hr): " + data.speed.toFixed(1);
+        stats.innerText = info;
     }
 }
 
@@ -127,7 +127,10 @@ function diffForSample(current, previous, max) {
 }
 
 function calculateStats() {
-    if (!previousSample) return undefined;
+    if (!previousSample) {
+        startDistance = currentSample.wheel * wheelSize / 1000 / 1000; // km
+        return;
+    }
 
     var cadence, distance, speed;
 
@@ -141,6 +144,7 @@ function calculateStats() {
         speed *= 3.6; // convert to km/hr
 
         distance = currentSample.wheel * wheelSize / 1000 / 1000; // km
+        distance -= startDistance;
     }
 
     if (hasCrank) {
@@ -151,9 +155,18 @@ function calculateStats() {
         cadence = (crankTimeDiff == 0) ? 0 : (60 * crankDiff / crankTimeDiff); // RPM
     }
 
-    return {
-        cadenceinRPM: cadence,
-        distanceinKM: distance,
-        speedInKMPerHour: speed
-    };
+    var newRatio = 0.8;
+    if (data) {
+        data = {
+            cadence: data.cadence * (1 - newRatio) + cadence * newRatio,
+            distance: distance,
+            speed: data.speed * (1 - newRatio) + speed * newRatio
+        };
+    } else {
+        data = {
+            cadence: cadence,
+            distance: distance,
+            speed: speed
+        };
+    }
 }
