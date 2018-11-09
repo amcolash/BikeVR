@@ -8,9 +8,25 @@ stopButton.addEventListener('click', onStopButtonClick);
 
 const UINT16_MAX = 65536;  // 2^16
 const UINT32_MAX = 4294967296;  // 2^32
-const wheelSize = 2111; // in mm, this is 700x25 (my tire)
 
-var characteristic, previousSample, currentSample, hasWheel, hasCrank;
+var characteristic, wheelSize, previousSample, currentSample, hasWheel, hasCrank;
+
+window.onload = updateWheel;
+
+function updateWheel() {
+    var rimElement = document.getElementById("rim");
+    var tireElement = document.getElementById("tire");
+    var mmElement = document.getElementById("mm");
+
+    var r = parseFloat(rimElement.value);
+    var t = parseFloat(tireElement.value);
+    if (r > 0 && t > 0) {
+        wheelSize = 3.1415 * (2 * t + r);
+        mmElement.value = Math.round(wheelSize);
+    } else {
+        mmElement.value = '';
+    }
+}
 
 function onStartButtonClick() {
     let serviceUuid = "cycling_speed_and_cadence";
