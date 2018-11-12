@@ -138,6 +138,7 @@ function init() {
     playToggle.innerText = autoMove ? "||" : ">";
     playToggle.addEventListener('click', function (event) {
         autoMove = !autoMove;
+        velocity = autoMove ? 17 : 0;
         playToggle.innerText = autoMove ? "||" : ">";
     });
 
@@ -375,6 +376,7 @@ function updateInfo(index, counter, delta) {
         }
     }
 
+    // Average over past 30 samples
     var samples = 30;
 
     hudInfo.fps -= (hudInfo.fps / samples);
@@ -534,30 +536,29 @@ function render() {
         counter = 0;
         index = (index + 1) % hudInfo.lines.length;
     }
-    // Add a tiny extra to delta so that we never get NaN
-    updateInfo(index, counter / hudInfo.updateSpeed, delta);
-
-    stats.update();
-    rendererStats.update(renderer);
     
     // Only update once things are loaded up
     if (currentLoaded == road.length - 1) {
-
-        // key K
-        if (keysDown["75"]) {
-            velocity -= 0.1;
+        // figure out velocity each frame
+        if (!typeof bluetoothStats) {
+            velocity = bluetoothStats.speed;
+        } else {
+            if (keysDown["75"]) {
+                velocity -= 0.5; // key K
+            } else if (keysDown["76"]) {
+                velocity += 0.5; // key L
+            } else if (keysDown["78"]) {
+                velocity = -17; // key N
+            } else if (keysDown["77"]) {
+                velocity = 17; // key M
+            } else if (!autoMove) {
+                velocity = 0;
+            }
         }
 
-        // Key L
-        if (keysDown["76"]) {
-            velocity += 0.1;
-        }
-
-        // M to go forward, N to go back
-        var moveDir = (autoMove || keysDown["77"]) ? 1 : (keysDown["78"] ? -1 : 0);
-        if (moveDir !== 0) {
+        if (velocity !== 0) {
             var mps = velocity * 1000 / 3600;
-            progress = (progress + delta * mps * moveDir) % dist;
+            progress = (progress + delta * mps) % dist;
 
 
             // console.log(sphereProgress, mesh.material.uniforms.prevBlend.value, mesh.material.uniforms.nextBlend.value);

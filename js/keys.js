@@ -22,6 +22,7 @@ function checkKey(e) {
     } else if (e.keyCode == '32') {
         var playToggle = document.getElementById("playToggle");
         autoMove = !autoMove;
+        velocity = autoMove ? 17 : 0;
         playToggle.textContent = autoMove ? "||" : ">";
     }
 }

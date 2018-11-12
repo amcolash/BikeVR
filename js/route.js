@@ -33,6 +33,7 @@ if (start && end && playToggle) {
     playToggle.textContent = autoMove ? "Autoplay: True" : "Autoplay: False";
     playToggle.addEventListener('click', function (event) {
         autoMove = !autoMove;
+        velocity = autoMove ? 17 : 0;
         playToggle.textContent = autoMove ? "Autoplay: True" : "Autoplay: False";
     });
 }

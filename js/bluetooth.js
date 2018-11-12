@@ -1,15 +1,16 @@
-var startButton = document.getElementById("start");
-var stopButton = document.getElementById("stop");
+var connectButton = document.getElementById("connect");
 var info = document.getElementById("info");
 var stats = document.getElementById("stats");
+var logElement = document.getElementById("log");
 
-startButton.addEventListener('click', onStartButtonClick);
-stopButton.addEventListener('click', onStopButtonClick);
+connectButton.addEventListener('click', handleButton);
 
 const UINT16_MAX = 65536;  // 2^16
 const UINT32_MAX = 4294967296;  // 2^32
+const updateRatio = 0.85; // Percent ratio between old/new stats
 
-var characteristic, wheelSize, previousSample, currentSample, data, hasWheel, hasCrank, startDistance;
+var characteristic, previousSample, currentSample, bluetoothStats, hasWheel, hasCrank, startDistance;
+var wheelSize = 2111;
 
 window.onload = updateWheel;
 
@@ -25,6 +26,14 @@ function updateWheel() {
         mmElement.value = Math.round(wheelSize);
     } else {
         mmElement.value = '';
+    }
+}
+
+function handleButton() {
+    if (!characteristic) {
+        onStartButtonClick();
+    } else {
+        onStopButtonClick();
     }
 }
 
@@ -56,6 +65,7 @@ function onStartButtonClick() {
                 log('Notifications started');
                 characteristic.addEventListener('characteristicvaluechanged',
                     handleNotifications);
+                connectButton.innerText = "Disconnect";
             });
         })
         .catch(error => {
@@ -66,10 +76,12 @@ function onStartButtonClick() {
 function onStopButtonClick() {
     if (characteristic) {
         characteristic.stopNotifications()
-            .then(_ => {
+            .then(() => {
                 log('Notifications stopped');
                 characteristic.removeEventListener('characteristicvaluechanged',
                     handleNotifications);
+                characteristic = undefined;
+                connectButton.innerText = "Connect";
             })
             .catch(error => {
                 log('Argh! ' + error);
@@ -78,11 +90,10 @@ function onStopButtonClick() {
 }
 
 function log(message) {
-    if (message && message.length > 0) {
+    if (message && message.length > 0 && logElement) {
         console.log(message);
-        var e = document.getElementById("log");
-        if (e.innerText.length > 0) e.innerText += "\n";
-        e.innerText += message;
+        if (logElement.innerText.length > 0) logElement.innerText += "\n";
+        logElement.innerText += message;
     }
 }
 
@@ -102,18 +113,18 @@ function handleNotifications(event) {
     };
 
     // console.log(previousSample, currentSample);
-    // var data = "Wheel Rev: " + currentSample.wheel + "\n";
-    // data += "Last Wheel Time: " + currentSample.wheelTime + "\n";
-    // data += "Crank Rev: " + currentSample.crank + "\n";
-    // data += "Last Crank Time: " + currentSample.crankTime;
-    // console.log(data);
+    // var bluetoothStats = "Wheel Rev: " + currentSample.wheel + "\n";
+    // bluetoothStats += "Last Wheel Time: " + currentSample.wheelTime + "\n";
+    // bluetoothStats += "Crank Rev: " + currentSample.crank + "\n";
+    // bluetoothStats += "Last Crank Time: " + currentSample.crankTime;
+    // console.log(bluetoothStats);
     
     calculateStats();
 
-    if (data) {
-        var info = "Cadence (rpm): " + data.cadence.toFixed(1) + "\n";
-        info += "Distance (km): " + data.distance.toFixed(2) + "\n";
-        info += "Speed (km/hr): " + data.speed.toFixed(1);
+    if (bluetoothStats) {
+        var info = "Cadence (rpm): " + bluetoothStats.cadence.toFixed(1) + "\n";
+        info += "Distance (km): " + bluetoothStats.distance.toFixed(2) + "\n";
+        info += "Speed (km/hr): " + bluetoothStats.speed.toFixed(1);
         stats.innerText = info;
     }
 }
@@ -132,16 +143,14 @@ function calculateStats() {
         return;
     }
 
-    var cadence, distance, speed;
-
+    var distance, cadence, speed;
     if (hasWheel) {
         let wheelTimeDiff = diffForSample(currentSample.wheelTime, previousSample.wheelTime, UINT16_MAX);
         wheelTimeDiff /= 1024; // Convert from fractional seconds (roughly ms) -> full seconds
         let wheelDiff = diffForSample(currentSample.wheel, previousSample.wheel, UINT32_MAX);
 
         var sampleDistance = wheelDiff * wheelSize / 1000; // distance in meters
-        speed = (wheelTimeDiff == 0) ? 0 : sampleDistance / wheelTimeDiff; // m/s
-        speed *= 3.6; // convert to km/hr
+        speed = (wheelTimeDiff == 0) ? 0 : sampleDistance / wheelTimeDiff * 3.6; // km/hr
 
         distance = currentSample.wheel * wheelSize / 1000 / 1000; // km
         distance -= startDistance;
@@ -155,15 +164,14 @@ function calculateStats() {
         cadence = (crankTimeDiff == 0) ? 0 : (60 * crankDiff / crankTimeDiff); // RPM
     }
 
-    var newRatio = 0.8;
-    if (data) {
-        data = {
-            cadence: data.cadence * (1 - newRatio) + cadence * newRatio,
+    if (bluetoothStats) {
+        bluetoothStats = {
+            cadence: bluetoothStats.cadence * (1 - updateRatio) + cadence * updateRatio,
             distance: distance,
-            speed: data.speed * (1 - newRatio) + speed * newRatio
+            speed: bluetoothStats.speed * (1 - updateRatio) + speed * updateRatio
         };
     } else {
-        data = {
+        bluetoothStats = {
             cadence: cadence,
             distance: distance,
             speed: speed
