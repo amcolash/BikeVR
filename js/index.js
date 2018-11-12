@@ -377,7 +377,7 @@ function updateInfo(index, counter, delta) {
     }
 
     // Average over past 30 samples
-    var samples = 30;
+    var samples = 15;
 
     hudInfo.fps -= (hudInfo.fps / samples);
     hudInfo.fps += ((1 / delta) / samples);
@@ -385,11 +385,17 @@ function updateInfo(index, counter, delta) {
     hudInfo.frame -= (hudInfo.frame / samples);
     hudInfo.frame += ((delta * 1000) / samples);
 
-    var offset = 230;
-    contextHUD.clearRect(hudInfo.canvas.width - offset, hudInfo.fontSize, offset, hudInfo.fontSize * 3);
+    var offset = 250;
+    contextHUD.clearRect(hudInfo.canvas.width - offset, hudInfo.fontSize, offset, hudInfo.fontSize * 6);
+
     contextHUD.fillText((hudInfo.fps).toFixed(0) + " fps", hudInfo.canvas.width - offset, hudInfo.fontSize);
     contextHUD.fillText((hudInfo.frame).toFixed(0) + " ms", hudInfo.canvas.width - offset, hudInfo.fontSize * 2);
-    contextHUD.fillText(velocity.toFixed(1) + " m/s", hudInfo.canvas.width - offset, hudInfo.fontSize * 3);
+    contextHUD.fillText(velocity.toFixed(1) + " km/hr", hudInfo.canvas.width - offset, hudInfo.fontSize * 4);
+
+    if (bluetoothStats) {
+        contextHUD.fillText(bluetoothStats.cadence.toFixed(1) + " rpm", hudInfo.canvas.width - offset, hudInfo.fontSize * 5);
+        contextHUD.fillText(bluetoothStats.distance.toFixed(1) + " km", hudInfo.canvas.width - offset, hudInfo.fontSize * 6);
+    }
 
     if (textureHUD) textureHUD.needsUpdate = true;
     if (perf) console.timeEnd("updateInfo");
@@ -589,9 +595,17 @@ function render() {
         }
     }
 
+    // Update hud
+    updateInfo(index, counter / hudInfo.updateSpeed, delta);
+
     controls.update(delta);
 
     renderer.render(scene, camera);
+
+    // Update stats here to profile the scene render, not the hud render
+    stats.update();	
+    rendererStats.update(renderer);
+
     renderer.render(sceneHUD, cameraHUD);
 }
 
