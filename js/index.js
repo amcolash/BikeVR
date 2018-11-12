@@ -225,25 +225,12 @@ function initListeners(panoLoader, depthLoader) {
         // cache the depth map
         depthMaps[this.depthMap.panoId] = createDepthMapTexture(this.depthMap);
 
-        // update progress bar
-        document.getElementById("progress").style.width = ((currentLoaded / (road.length - 2)) * 100) + "%";
-
-        if (currentLoaded < road.length - 1) {
-            // if (currentLoaded === 0) {
-            //     // Start rendering
-            //     renderer.animate(render);
-
-            //     // show 1st sphere
-            //     updateSphere(getId(currentSphere));
-
-            //     // hide the loading message
-            //     document.getElementById("loading").style.display = "none";
-            // }
-
-            // load the next pano/depth map
+        if (currentLoaded < road.length - 1) {                
             currentLoaded++;
+
+            // update progress bar
+            document.getElementById("progress").style.width = ((currentLoaded / (road.length - 2)) * 100) + "%";
             console.log(currentLoaded + "/" + (road.length - 1));
-            // loadIndex(currentLoaded);
         } else {
             if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
                 "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) {
@@ -275,7 +262,7 @@ function initListeners(panoLoader, depthLoader) {
             clock.getDelta();
 
             // start rendering
-            renderer.animate(render);
+            renderer.setAnimationLoop(render);
         }
     };
 }
@@ -352,8 +339,8 @@ function initInfo() {
     hudInfo.canvas = document.createElement("canvas");
     contextHUD = hudInfo.canvas.getContext('2d');
 
-    hudInfo.canvas.width = 2048;
-    hudInfo.canvas.height = 2048;
+    hudInfo.canvas.width = 1024;
+    hudInfo.canvas.height = 1024;
 
     var geometry = new THREE.PlaneGeometry(width, height);
     textureHUD = new THREE.CanvasTexture(hudInfo.canvas, { minFilter: THREE.LinearFilter });
@@ -361,10 +348,10 @@ function initInfo() {
 
     sceneHUD.add(new THREE.Mesh(geometry, material));
 
-    hudInfo.infoWidth = 700;
-    hudInfo.infoHeight = 550;
-    hudInfo.fontSize = 50;
-    hudInfo.updateSpeed = 3;
+    hudInfo.infoWidth = 400;
+    hudInfo.infoHeight = 250;
+    hudInfo.fontSize = 25;
+    hudInfo.updateSpeed = 0.5;
     hudInfo.fps = 60;
     hudInfo.frame = 16;
 
@@ -376,7 +363,10 @@ function initInfo() {
 }
 
 function updateInfo(index, counter, delta) {
-    // if (perf) console.time("updateInfo");
+    return;
+    if (perf || true) console.time("updateInfo");
+
+    console.time("updateInfo.info")
     contextHUD.clearRect(hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight - hudInfo.fontSize, hudInfo.infoWidth, hudInfo.infoHeight + hudInfo.fontSize);
     for (var i = index, len = hudInfo.lines.length; i < len; i++) {
         if ((i - index) * hudInfo.fontSize < (hudInfo.infoHeight - hudInfo.fontSize)) {
@@ -384,7 +374,9 @@ function updateInfo(index, counter, delta) {
             contextHUD.fillText(hudInfo.lines[i], hudInfo.fontSize, yValue);
         }
     }
+    console.timeEnd("updateInfo.info")
 
+    console.time("updateInfo.stats")
     // Average over past 30 samples
     var samples = 15;
 
@@ -405,9 +397,10 @@ function updateInfo(index, counter, delta) {
         contextHUD.fillText(bluetoothStats.cadence.toFixed(1) + " rpm", hudInfo.canvas.width - offset, hudInfo.fontSize * 5);
         contextHUD.fillText(bluetoothStats.distance.toFixed(1) + " km", hudInfo.canvas.width - offset, hudInfo.fontSize * 6);
     }
+    console.timeEnd("updateInfo.stats")
 
-    if (textureHUD) textureHUD.needsUpdate = true;
-    // if (perf) console.timeEnd("updateInfo");
+    // if (textureHUD) textureHUD.needsUpdate = true;
+    if (perf || true) console.timeEnd("updateInfo");
 }
 
 function getId(index) {
@@ -547,12 +540,6 @@ var counter = 0;
 var index = 0;
 function render() {
     var delta = clock.getDelta();
-
-    counter += delta;
-    if (counter > hudInfo.updateSpeed) {
-        counter = 0;
-        index = (index + 1) % hudInfo.lines.length;
-    }
     
     // Only update once things are loaded up
     if (currentLoaded == road.length - 1) {
@@ -606,8 +593,13 @@ function render() {
         }
     }
 
-    // Update hud
-    updateInfo(index, counter / hudInfo.updateSpeed, delta);
+    // Check if we need to update hud
+    // counter += delta;
+    // if (counter > hudInfo.updateSpeed) {
+    //     updateInfo(index, counter / hudInfo.updateSpeed, delta);
+    //     counter = 0;
+    //     index = (index + 1) % hudInfo.lines.length;
+    // }
 
     controls.update(delta);
 
