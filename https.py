@@ -9,7 +9,18 @@
 import BaseHTTPServer, SimpleHTTPServer
 import ssl
 
-httpd = BaseHTTPServer.HTTPServer(("", 4443), SimpleHTTPServer.SimpleHTTPRequestHandler)
+class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_my_headers()
+        SimpleHTTPServer.SimpleHTTPRequestHandler.end_headers(self)
+
+    def send_my_headers(self):
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+
+# httpd = BaseHTTPServer.HTTPServer(("", 4443), SimpleHTTPServer.SimpleHTTPRequestHandler)
+httpd = BaseHTTPServer.HTTPServer(("", 4443), MyHTTPRequestHandler)
 httpd.socket = ssl.wrap_socket (httpd.socket, certfile='./server.pem', server_side=True)
 print "HTTPS server started on port 4443"
 httpd.serve_forever()

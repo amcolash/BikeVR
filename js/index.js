@@ -5,8 +5,6 @@ const hq = false;
 const perf = false;
 
 const clock = new THREE.Clock();
-const _panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
-const _depthLoader = new GSVPANO.PanoDepthLoader();
 
 // Those shaders aren't going anywhere!
 const vertexShader = document.getElementById("vertexShader").text;
@@ -156,11 +154,20 @@ function init() {
     });
 
     window.addEventListener('resize', onWindowResize, false);
-    
-    initListeners();
 
     if (perf) console.timeEnd("init");
-    loadIndex(currentLoaded);
+
+    for (var i = 0; i < road.length; i++) {
+        loadIndex(i);
+    }
+}
+
+function loadIndex(i) {
+    let panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
+    let depthLoader = new GSVPANO.PanoDepthLoader();
+    initListeners(panoLoader, depthLoader);
+
+    panoLoader.load(road[i], i);
 }
 
 function createMaterial(wireframe) {
@@ -197,23 +204,24 @@ function resetCamera() {
     camera.updateProjectionMatrix();
 }
 
-function initListeners() {
-    _panoLoader.onPanoramaLoad = function () {
+function initListeners(panoLoader, depthLoader) {
+    panoLoader.onPanoramaLoad = function () {
         // cache the lat/long
         info[this.panoId] = {
             lat: this.lat,
             lng: this.lng,
-            rot: this.rotation
+            rot: this.rotation,
+            index: this.index
         };
 
         // Keep track of this texture
         makeTexture(this.panoId, this.canvas);
 
         // Load the next depth map
-        _depthLoader.load(this.panoId);
+        depthLoader.load(this.panoId);
     };
 
-    _depthLoader.onDepthLoad = function () {
+    depthLoader.onDepthLoad = function () {
         // cache the depth map
         depthMaps[this.depthMap.panoId] = createDepthMapTexture(this.depthMap);
 
@@ -234,7 +242,8 @@ function initListeners() {
 
             // load the next pano/depth map
             currentLoaded++;
-            loadIndex(currentLoaded);
+            console.log(currentLoaded + "/" + (road.length - 1));
+            // loadIndex(currentLoaded);
         } else {
             if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
                 "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) {
@@ -367,7 +376,7 @@ function initInfo() {
 }
 
 function updateInfo(index, counter, delta) {
-    if (perf) console.timeEnd("updateInfo");
+    // if (perf) console.time("updateInfo");
     contextHUD.clearRect(hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight - hudInfo.fontSize, hudInfo.infoWidth, hudInfo.infoHeight + hudInfo.fontSize);
     for (var i = index, len = hudInfo.lines.length; i < len; i++) {
         if ((i - index) * hudInfo.fontSize < (hudInfo.infoHeight - hudInfo.fontSize)) {
@@ -398,7 +407,7 @@ function updateInfo(index, counter, delta) {
     }
 
     if (textureHUD) textureHUD.needsUpdate = true;
-    if (perf) console.timeEnd("updateInfo");
+    // if (perf) console.timeEnd("updateInfo");
 }
 
 function getId(index) {
@@ -419,15 +428,17 @@ function getId(index) {
         "info.length": Object.keys(info).length
     })) { console.trace(); return };
 
-    return Object.keys(panoramas)[index];
+    return Object.keys(info).filter(function(id) {
+        return info[id].index === index;
+    })[0];
 }
 
 function getIndex(panoId) {
-    if (!assert(panoramas[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
+    if (!assert(panoramas[panoId] !== undefined, { "message": "this panoId could not be found in panoramas", "panoId": panoId })) return;
     if (!assert(depthMaps[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
     if (!assert(info[panoId] !== undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
 
-    return Object.keys(panoramas).indexOf(panoId);
+    return info[panoId].index;
 }
 
 function updateSphere(panoId, prevPanoId, nextPanoId) {
@@ -468,8 +479,8 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     mesh2.material.uniforms.texture.value = panoramas[nextPanoId];
 
     // Unload previous texture (only in prod?) Seems to be ok in dev even on "reload" of texture...
-    if (depthMaps[prevPanoId] && hq) depthMaps[prevPanoId].dispose();
-    if (panoramas[prevPanoId] && hq) panoramas[prevPanoId].dispose();
+    if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
+    if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
 
     if (wireframe) {
         wireframeMesh.material.uniforms.displace.value = depthMap;
@@ -607,8 +618,4 @@ function render() {
     rendererStats.update(renderer);
 
     renderer.render(sceneHUD, cameraHUD);
-}
-
-function loadIndex(i) {
-    _panoLoader.load(road[i]);
 }

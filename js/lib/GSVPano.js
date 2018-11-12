@@ -147,11 +147,11 @@ GSVPANO.PanoLoader = function (parameters) {
 		
 	};
 	
-	this.load = function (location) {
+	this.load = function (location, index) {
 	
 		// console.log('Load for', JSON.stringify(location));
 		var self = this;
-		_panoClient.getPanoramaByLocation(location, 50, function (result, status) {
+		_panoClient.getPanorama({location: location, radius: 50, source: 'outdoor'}, function (result, status) {
 			if (status === google.maps.StreetViewStatus.OK) {
 				if( self.onPanoramaData ) self.onPanoramaData( result );
 				var h = google.maps.geometry.spherical.computeHeading(location, result.location.latLng);
@@ -164,6 +164,7 @@ GSVPANO.PanoLoader = function (parameters) {
 				self.location = location;
 				self.lat = location.lat();
 				self.lng = location.lng();
+				self.index = index;
 				self.composePanorama();
 			} else {
 				if( self.onNoPanoramaData ) self.onNoPanoramaData( status );
