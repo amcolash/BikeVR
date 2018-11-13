@@ -512,6 +512,7 @@ function onWindowResize() {
 
 var counter = 0;
 var index = 0;
+var blend = 1000;
 function render() {
     var delta = clock.getDelta();
     
@@ -534,22 +535,32 @@ function render() {
             }
         }
 
-        if (velocity !== 0) {
+        if (velocity !== 0 || true) {
             var mps = velocity * 1000 / 3600;
             progress = (progress + delta * mps) % dist;
-
 
             // console.log(sphereProgress, mesh.material.uniforms.prevBlend.value, mesh.material.uniforms.nextBlend.value);
 
             currPos.setCenter(getPosition());
             map.setCenter(currPos.getCenter());
 
-            tmpVec2.set(currPos.getCenter().lat() - currPano.getCenter().lat(), currPos.getCenter().lng() - currPano.getCenter().lng());
-            var angle = tmpVec2.angle();
-            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 3.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
+            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 3, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
+            // This way we don't need angles to figure things out
+            movement *= -currentSign;
 
-            mesh1.position.set(Math.cos(angle) * movement, -1, 0);
-            mesh2.position.set(mesh1.position.x - Math.cos(angle) * sphereRadius * 35, -1, 0);
+            var halfSphere = sphereRadius * 0.75 * movementSpeed;
+            var alpha = Math.abs(movement) / halfSphere;
+
+            var scale = 0;
+            if (movement > 0) scale = lerp(0.75, 1, alpha);
+            if (movement <= 0) scale = lerp(1, 1.25, alpha);
+
+            // console.log(scale);
+            movement *= scale;
+
+            mesh1.position.set(movement, -1, 0);
+            mesh2.position.set(sphereRadius * 0.375 * movementSpeed, -1, 0);
+            mesh2.position.set(blend, -1, 0);
         }
 
         // if (sphereProgress < alphaBlend) {
