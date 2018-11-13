@@ -512,7 +512,8 @@ function onWindowResize() {
 
 var counter = 0;
 var index = 0;
-var blend = 1000;
+var blend = 1200;
+
 function render() {
     var delta = clock.getDelta();
     
@@ -544,19 +545,26 @@ function render() {
             currPos.setCenter(getPosition());
             map.setCenter(currPos.getCenter());
 
-            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 3, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
+            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 2.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
             // This way we don't need angles to figure things out
             movement *= -currentSign;
 
-            var halfSphere = sphereRadius * 0.75 * movementSpeed;
+            var halfSphere = sphereRadius * 0.375 * movementSpeed;
             var alpha = Math.abs(movement) / halfSphere;
 
-            var scale = 0;
-            if (movement > 0) scale = lerp(0.75, 1, alpha);
-            if (movement <= 0) scale = lerp(1, 1.25, alpha);
+            // var scale = 1;
+            // if (movement > 0) scale = lerp(1, blend1, alpha);
+            // if (movement <= 0) scale = lerp(1, 0.75, alpha);
+            // if (currentSign > 0) {
+            //     movement *= blend1;
+            // } else {
+            //     movement *= blend2;
+            // }
 
-            // console.log(scale);
-            movement *= scale;
+            movement *= 0.9;
+
+            // console.log(alpha, scale);
+            // movement *= scale;
 
             mesh1.position.set(movement, -1, 0);
             mesh2.position.set(sphereRadius * 0.375 * movementSpeed, -1, 0);
