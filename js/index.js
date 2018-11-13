@@ -540,41 +540,19 @@ function render() {
             var mps = velocity * 1000 / 3600;
             progress = (progress + delta * mps) % dist;
 
-            // console.log(sphereProgress, mesh.material.uniforms.prevBlend.value, mesh.material.uniforms.nextBlend.value);
-
             currPos.setCenter(getPosition());
             map.setCenter(currPos.getCenter());
 
             var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 2.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
-            // This way we don't need angles to figure things out
-            movement *= -currentSign;
-
-            var halfSphere = sphereRadius * 0.375 * movementSpeed;
-            var alpha = Math.abs(movement) / halfSphere;
-
-            // var scale = 1;
-            // if (movement > 0) scale = lerp(1, blend1, alpha);
-            // if (movement <= 0) scale = lerp(1, 0.75, alpha);
-            // if (currentSign > 0) {
-            //     movement *= blend1;
-            // } else {
-            //     movement *= blend2;
-            // }
-
-            movement *= 0.9;
-
-            // console.log(alpha, scale);
-            // movement *= scale;
+            
+            // This way we don't need angles to figure things out and things blend ok
+            movement *= -currentSign * 0.9;
 
             mesh1.position.set(movement, -1, 0);
             mesh2.position.set(sphereRadius * 0.375 * movementSpeed, -1, 0);
             mesh2.position.set(blend, -1, 0);
         }
 
-        // if (sphereProgress < alphaBlend) {
-        //     mesh1.material.uniforms.prevBlend.value = 1 - (sphereProgress * (1 / alphaBlend));
-        //     mesh1.material.uniforms.nextBlend.value = 0;
-        //     mesh2.visible = true;
         if (sphereProgress > 1 - alphaBlend) {
             mesh1.material.uniforms.nextBlend.value = (1 - sphereProgress) * (1 / alphaBlend);
             mesh2.material.uniforms.nextBlend.value = 1 - ((1 - sphereProgress) * (1 / alphaBlend));
