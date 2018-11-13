@@ -1,5 +1,5 @@
 var container;
-var scene, sceneHUD, camera, cameraHUD, mesh1, mesh2, wireframeMesh, textureHUD, contextHUD, renderer, controls, stats, rendererStats;
+var scene, sceneHUD, camera, cameraHUD, mesh1, mesh2, textureHUD, contextHUD, renderer, controls, stats, rendererStats;
 
 const hq = false;
 const perf = false;
@@ -73,28 +73,15 @@ function init() {
 
     // Make main geo
     var geo = new THREE.SphereBufferGeometry(sphereRadius, horizontalSphereSegments, verticalSphereSegments);
-    var mat1 = createMaterial(false);
+    var mat1 = createMaterial();
     mesh1 = new THREE.Mesh(geo, mat1);
     mesh1.frustumCulled = false;
     scene.add(mesh1);
 
-    var mat2 = createMaterial(false);
+    var mat2 = createMaterial();
     mesh2 = new THREE.Mesh(geo, mat2);
     mesh2.frustumCulled = false;
     scene.add(mesh2);
-
-    if (wireframe) {
-        // Make wireframe mesh
-        var geo1 = new THREE.SphereBufferGeometry(sphereRadius - 2, horizontalSphereSegments, verticalSphereSegments);
-        var mat3 = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
-        wireframeMesh = new THREE.Mesh(geo1, mat3);
-        wireframeMesh.frustumCulled = false;
-
-        // I am doing this to keep the fragment
-        // and only modify the vertex shader
-        wireframeMesh.material = createMaterial(true);
-        scene.add(wireframeMesh);
-    }
 
     initInfo();
 
@@ -170,7 +157,7 @@ function loadIndex(i) {
     panoLoader.load(road[i], i);
 }
 
-function createMaterial(wireframe) {
+function createMaterial() {
     var mat = new THREE.ShaderMaterial({
         uniforms: {
             texture: {
@@ -187,7 +174,7 @@ function createMaterial(wireframe) {
             }
         },
         vertexShader: vertexShader,
-        fragmentShader: wireframe ? undefined : fragmentShader,
+        fragmentShader: fragmentShader,
         side: THREE.DoubleSide,
         wireframe: wireframe,
         blending: THREE.NormalBlending,
@@ -229,7 +216,7 @@ function initListeners(panoLoader, depthLoader) {
             currentLoaded++;
 
             // update progress bar
-            document.getElementById("progress").style.width = ((currentLoaded / (road.length - 2)) * 100) + "%";
+            document.getElementById("progress").style.width = ((currentLoaded / (road.length - 1)) * 100) + "%";
             console.log(currentLoaded + "/" + (road.length - 1));
         } else {
             if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
@@ -247,14 +234,6 @@ function initListeners(panoLoader, depthLoader) {
 
             // update markers after everything has loaded
             updateMarkers();
-
-            var panoId = getId(0);
-            var depthMap = depthMaps[panoId];
-            var texture = panoramas[panoId];
-
-            // Assign new textures
-            mesh1.material.uniforms.displace.value = depthMap;
-            mesh1.material.uniforms.texture.value = texture;
 
             if (perf) console.timeEnd("fully loaded");
 
@@ -475,11 +454,6 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
     if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
 
-    if (wireframe) {
-        wireframeMesh.material.uniforms.displace.value = depthMap;
-        wireframeMesh.material.uniforms.texture.value = texture;
-    }
-
     resetCamera();
 
     // update markers
@@ -544,7 +518,7 @@ function render() {
     // Only update once things are loaded up
     if (currentLoaded == road.length - 1) {
         // figure out velocity each frame
-        if (!typeof bluetoothStats) {
+        if (bluetoothStats) {
             velocity = bluetoothStats.speed;
         } else {
             if (keysDown["75"]) {

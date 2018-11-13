@@ -1,5 +1,5 @@
 var connectButton = document.getElementById("connect");
-var info = document.getElementById("info");
+var bluetoothInfo = document.getElementById("bluetoothInfo");
 var stats = document.getElementById("stats");
 var logElement = document.getElementById("log");
 
@@ -47,7 +47,7 @@ function onStartButtonClick() {
     log('Requesting Bluetooth Device...');
     navigator.bluetooth.requestDevice({filters: [{services: [serviceUuid]}]})
         .then(device => {
-            info.style.display = "block";
+            if (bluetoothInfo) bluetoothInfo.style.display = "block";
             log('Connecting to GATT Server...');
             return device.gatt.connect();
         })
@@ -81,6 +81,7 @@ function onStopButtonClick() {
                 characteristic.removeEventListener('characteristicvaluechanged',
                     handleNotifications);
                 characteristic = undefined;
+                bluetoothStats = undefined;
                 connectButton.innerText = "Connect";
             })
             .catch(error => {
@@ -90,8 +91,8 @@ function onStopButtonClick() {
 }
 
 function log(message) {
+    console.log(message);
     if (message && message.length > 0 && logElement) {
-        console.log(message);
         if (logElement.innerText.length > 0) logElement.innerText += "\n";
         logElement.innerText += message;
     }
@@ -122,10 +123,10 @@ function handleNotifications(event) {
     calculateStats();
 
     if (bluetoothStats) {
-        var info = "Cadence (rpm): " + bluetoothStats.cadence.toFixed(1) + "\n";
-        info += "Distance (km): " + bluetoothStats.distance.toFixed(2) + "\n";
-        info += "Speed (km/hr): " + bluetoothStats.speed.toFixed(1);
-        stats.innerText = info;
+        var data = "Cadence (rpm): " + bluetoothStats.cadence.toFixed(1) + "\n";
+        data += "Distance (km): " + bluetoothStats.distance.toFixed(2) + "\n";
+        data += "Speed (km/hr): " + bluetoothStats.speed.toFixed(1);
+        stats.innerText = data;
     }
 }
 
