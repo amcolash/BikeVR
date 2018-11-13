@@ -140,7 +140,7 @@ function checkSphere(index) {
             updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
 
             currPos.setCenter(getPosition());
-            map.setCenter(currPos.getCenter());
+            if (map) map.setCenter(currPos.getCenter());
         }
     }
 }
@@ -238,11 +238,13 @@ function getRoute(request) {
             }
 
             // Fir bounds to all of the markers (only when in the route view, not in vr view)
-            if (start && end) {
-                map.fitBounds(bounds);
-            } else {
-                map.setZoom(17);
-                map.setCenter(road[0]);
+            if (map) {
+                if (start && end) {
+                    map.fitBounds(bounds);
+                } else {
+                    map.setZoom(17);
+                    map.setCenter(road[0]);
+                }
             }
 
             // console.log("path length: " + path.length);

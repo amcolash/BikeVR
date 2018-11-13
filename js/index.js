@@ -34,7 +34,6 @@ var hudInfo = {};
 
 var markers = [];
 
-var currentLoaded = 0;
 var currentSphere = 0;
 
 var tmpVec2 = new THREE.Vector2();
@@ -109,7 +108,7 @@ function init() {
         renderer.vr.enabled = true;
 
         // Hide map on mobile by default
-        mapElem.classList = "hidden";
+        if (mapElem) mapElem.classList = "hidden";
         mapToggle.innerText = "+";
     }
 
@@ -144,9 +143,10 @@ function init() {
 
     if (perf) console.timeEnd("init");
 
-    for (var i = 0; i < road.length; i++) {
-        loadIndex(i);
-    }
+    loadIndex(0);
+    
+    // for (var i = 0; i < road.length; i++) {
+    // }
 }
 
 function loadIndex(i) {
@@ -212,23 +212,30 @@ function initListeners(panoLoader, depthLoader) {
         // cache the depth map
         depthMaps[this.depthMap.panoId] = createDepthMapTexture(this.depthMap);
 
-        if (currentLoaded < road.length - 1) {                
-            currentLoaded++;
+        // if (currentLoaded < road.length - 1) {                
+        //     currentLoaded++;
 
-            // update progress bar
-            document.getElementById("progress").style.width = ((currentLoaded / (road.length - 1)) * 100) + "%";
-            console.log(currentLoaded + "/" + (road.length - 1));
-        } else {
-            if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
-                "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) {
-                document.getElementById("progress").style.backgroundColor = "red";
-                return;
-            }
+        //     // update progress bar
+        //     document.getElementById("progress").style.width = ((currentLoaded / (road.length - 1)) * 100) + "%";
+        //     console.log(currentLoaded + "/" + (road.length - 1));
+        // } else {
 
-            // hide the loading messages
-            document.getElementById("loading").style.display = "none";
-            document.getElementById("progress").style.display = "none";
+        if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
+            "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) {
+            document.getElementById("progress").style.backgroundColor = "red";
+            return;
+        }
 
+        // hide the loading messages
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("progress").style.display = "none";
+
+        if (getIndex(this.depthMap.panoId) === 0) {
+            loadIndex(1);
+        }
+
+        // Init after loading first sphere
+        if (getIndex(this.depthMap.panoId) === 1) {
             // show 1st sphere
             updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
 
@@ -243,6 +250,7 @@ function initListeners(panoLoader, depthLoader) {
             // start rendering
             renderer.setAnimationLoop(render);
         }
+        // }
     };
 }
 
@@ -383,22 +391,22 @@ function updateInfo(index, counter, delta) {
 }
 
 function getId(index) {
-    if (!assert(typeof index == "number", { "message": "index provided is not a number", "index": index })) return;
-    if (!assert(index < Object.keys(panoramas).length, {
-        "message": "index greater than panoramas.length",
-        "index": index,
-        "panoramas.length": Object.keys(panoramas).length
-    })) { console.trace(); return };
-    if (!assert(index < Object.keys(depthMaps).length, {
-        "message": "index greater than depthMaths.length",
-        "index": index,
-        "depthMaps.length": Object.keys(depthMaps).length
-    })) { console.trace(); return };
-    if (!assert(index < Object.keys(info).length, {
-        "message": "index greater than info.length",
-        "index": index,
-        "info.length": Object.keys(info).length
-    })) { console.trace(); return };
+    // if (!assert(typeof index == "number", { "message": "index provided is not a number", "index": index })) return;
+    // if (!assert(index < Object.keys(panoramas).length, {
+    //     "message": "index greater than panoramas.length",
+    //     "index": index,
+    //     "panoramas.length": Object.keys(panoramas).length
+    // })) { console.trace(); return };
+    // if (!assert(index < Object.keys(depthMaps).length, {
+    //     "message": "index greater than depthMaths.length",
+    //     "index": index,
+    //     "depthMaps.length": Object.keys(depthMaps).length
+    // })) { console.trace(); return };
+    // if (!assert(index < Object.keys(info).length, {
+    //     "message": "index greater than info.length",
+    //     "index": index,
+    //     "info.length": Object.keys(info).length
+    // })) { console.trace(); return };
 
     return Object.keys(info).filter(function(id) {
         return info[id].index === index;
@@ -406,17 +414,17 @@ function getId(index) {
 }
 
 function getIndex(panoId) {
-    if (!assert(panoramas[panoId] !== undefined, { "message": "this panoId could not be found in panoramas", "panoId": panoId })) return;
-    if (!assert(depthMaps[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
-    if (!assert(info[panoId] !== undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
+    // if (!assert(panoramas[panoId] !== undefined, { "message": "this panoId could not be found in panoramas", "panoId": panoId })) return;
+    // if (!assert(depthMaps[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
+    // if (!assert(info[panoId] !== undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
 
     return info[panoId].index;
 }
 
 function updateSphere(panoId, prevPanoId, nextPanoId) {
-    if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
-    if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
-    if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
+    // if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
+    // if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
+    // if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
 
     var index = getIndex(panoId);
     var rotation = -info[panoId].rot;
@@ -458,6 +466,8 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
 
     // update markers
     updateMarkers();
+
+    loadIndex(index + 2);
 }
 
 function updateMarkers() {
@@ -518,7 +528,7 @@ function render() {
     var delta = clock.getDelta();
     
     // Only update once things are loaded up
-    if (currentLoaded == road.length - 1) {
+    // if (currentLoaded == road.length - 1) {
         // figure out velocity each frame
         if (bluetoothStats) {
             velocity = bluetoothStats.speed;
@@ -541,7 +551,7 @@ function render() {
             progress = (progress + delta * mps) % dist;
 
             currPos.setCenter(getPosition());
-            map.setCenter(currPos.getCenter());
+            if (map) map.setCenter(currPos.getCenter());
 
             var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 2.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
             
@@ -562,7 +572,7 @@ function render() {
             mesh2.material.uniforms.nextBlend.value = 0;
             mesh2.visible = false;
         }
-    }
+    // }
 
     // Check if we need to update hud
     // counter += delta;
