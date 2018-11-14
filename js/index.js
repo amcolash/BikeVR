@@ -427,14 +427,10 @@ function getIndex(panoId) {
     if (!assert(depthMaps[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
     if (!assert(info[panoId] !== undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
 
-    return info[panoId] ? info[panoId].index : undefined;
+    return info[panoId].index;
 }
 
 function updateSphere(panoId, prevPanoId, nextPanoId) {
-    if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
-    if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
-    if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
-    
     var index = getIndex(panoId);
     if (typeof index === "undefined" || index < 0 || index >= road.length) return;
 
