@@ -216,14 +216,6 @@ function initListeners(panoLoader, depthLoader) {
         // cache the depth map
         depthMaps[this.depthMap.panoId] = createDepthMapTexture(this.depthMap);
 
-        // if (currentLoaded < road.length - 1) {                
-        //     currentLoaded++;
-
-        //     // update progress bar
-        //     document.getElementById("progress").style.width = ((currentLoaded / (road.length - 1)) * 100) + "%";
-        //     console.log(currentLoaded + "/" + (road.length - 1));
-        // } else {
-
         if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
             "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) {
             document.getElementById("progress").style.backgroundColor = "red";
@@ -233,8 +225,6 @@ function initListeners(panoLoader, depthLoader) {
         // hide the loading messages
         document.getElementById("loading").style.display = "none";
         document.getElementById("progress").style.display = "none";
-
-        if (getId(currentSphere + 1) === this.depthMap.panoId) updateNextPano(this.depthMap.panoId);
 
         if (sphereAfterLoad === 0) {
             if (getIndex(this.depthMap.panoId) === 0) {
@@ -257,10 +247,10 @@ function initListeners(panoLoader, depthLoader) {
                 // start rendering
                 renderer.setAnimationLoop(render);
             }
-        } else {
-            handleAfterLoad();
         }
-        // }
+
+        if (getId(currentSphere + 1) === this.depthMap.panoId) updateNextPano(this.depthMap.panoId);
+        handleAfterLoad();
     };
 }
 
@@ -433,17 +423,17 @@ function getId(index) {
 }
 
 function getIndex(panoId) {
-    // if (!assert(panoramas[panoId] !== undefined, { "message": "this panoId could not be found in panoramas", "panoId": panoId })) return;
-    // if (!assert(depthMaps[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
-    // if (!assert(info[panoId] !== undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
+    if (!assert(panoramas[panoId] !== undefined, { "message": "this panoId could not be found in panoramas", "panoId": panoId })) return;
+    if (!assert(depthMaps[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
+    if (!assert(info[panoId] !== undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
 
     return info[panoId] ? info[panoId].index : undefined;
 }
 
 function updateSphere(panoId, prevPanoId, nextPanoId) {
-    // if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
-    // if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
-    // if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
+    if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
+    if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
+    if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
     
     var index = getIndex(panoId);
     if (typeof index === "undefined" || index < 0 || index >= road.length) return;

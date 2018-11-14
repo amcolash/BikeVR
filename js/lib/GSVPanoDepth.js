@@ -13,36 +13,35 @@ GSVPANO.PanoDepthLoader = function (parameters) {
         url = "https://maps.google.com/cbk?output=json&cb_client=maps_sv&v=4&dm=1&pm=1&ph=1&hl=en&panoid=" + panoId;
 
         var req = new XMLHttpRequest();
-        req.addEventListener("load", () => {
-            if (req.readyState == 4 && req.status == 200) {
+        req.onreadystatechange = function (event) {  
+            if (req.readyState === 4) {  
                 var decoded, depthMap, data;
+                if (req.status === 200) {
+                    try {
+                        data = req.response;
+                        decoded = self.decode(data.model.depth_map);
+                        depthMap = self.parse(decoded);
 
-                try {
-                    data = JSON.parse(req.responseText);
-                    decoded = self.decode(data.model.depth_map);
-                    depthMap = self.parse(decoded);
-
-                    // Add the panoId to the depth map object
-                    depthMap.panoId = panoId;
-                } catch(e) {
-                    console.error("Error loading depth map for pano " + panoId + "\n" + e.message + "\nAt " + e.filename + "(" + e.lineNumber + ")");
+                        // Add the panoId to the depth map object
+                    } catch(e) {
+                        console.error("Error loading depth map for pano " + panoId + "\n" + e.message + "\nAt " + e.filename + "(" + e.lineNumber + ")");
+                        depthMap = self.createEmptyDepthMap();
+                    }
+                } else {
+                    console.error("Request failed: " + url + "\n" + req.statusText);
                     depthMap = self.createEmptyDepthMap();
                 }
+                
+                depthMap.panoId = panoId;
                 if(self.onDepthLoad) {
                     self.depthMap = depthMap;
                     self.onDepthLoad();
                 }
             }
-        });
-        req.addEventListener("error", (error) => {
-            console.error("Request failed: " + url + "\n" + error);
-            var depthMap = self.createEmptyDepthMap();
-            if(self.onDepthLoad) {
-                self.depthMap = depthMap;
-                self.onDepthLoad();
-            }
-        });
+        };
+
         req.open("GET", url);
+        req.responseType = "json";
         req.send();
     }
 
