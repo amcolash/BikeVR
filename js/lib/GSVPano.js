@@ -25,25 +25,20 @@ GSVPANO.PanoLoader = function (parameters) {
 		onPanoramaLoad = null;
 		
 	this.setProgress = function (p) {
-	
 		if (this.onProgress) {
 			this.onProgress(p);
 		}
-		
 	};
 
 	this.throwError = function (message) {
-	
 		if (this.onError) {
 			this.onError(message);
 		} else {
 			console.error(message);
 		}
-		
 	};
 
 	this.adaptTextureToZoom = function () {
-	
 		var w1 = 416 * Math.pow(2, _zoom),
 			h1 = (416 * Math.pow(2, _zoom - 1));
 		_canvas1.width = w1;
@@ -60,7 +55,6 @@ GSVPANO.PanoLoader = function (parameters) {
 	};
 
 	this.composeFromTile = function (x, y, texture) {
-		
 		_ctx1.drawImage(texture, x * 512, y * 512);
 		_ctx2.drawImage(texture, x * 512, y * 512);
 		_count++;
@@ -87,11 +81,9 @@ GSVPANO.PanoLoader = function (parameters) {
 				this.onPanoramaLoad();
 			}
 		}
-		
 	};
 
 	this.composePanorama = function () {
-	
 		this.setProgress(0);
 		// console.log('Loading panorama for zoom ' + _zoom + '...');
 		
@@ -144,11 +136,9 @@ GSVPANO.PanoLoader = function (parameters) {
 				}
 			}
 		}
-		
 	};
 	
 	this.load = function (location, index) {
-	
 		// console.log('Load for', JSON.stringify(location));
 		var self = this;
 		_panoClient.getPanorama({location: location, radius: 50, source: 'outdoor'}, function (result, status) {
@@ -171,7 +161,6 @@ GSVPANO.PanoLoader = function (parameters) {
 				self.throwError('Could not retrieve panorama for the following reason: ' + status);
 			}
 		});
-		
 	};
 	
 	this.setZoom = function( z ) {
@@ -180,5 +169,4 @@ GSVPANO.PanoLoader = function (parameters) {
 	};
 
 	this.setZoom( _parameters.zoom || 1 );
-
 };

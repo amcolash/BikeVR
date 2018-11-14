@@ -6,6 +6,9 @@ const perf = false;
 
 const clock = new THREE.Clock();
 
+const panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
+const depthLoader = new GSVPANO.PanoDepthLoader();
+
 // Those shaders aren't going anywhere!
 const vertexShader = document.getElementById("vertexShader").text;
 const fragmentShader = document.getElementById("fragmentShader").text;
@@ -141,20 +144,16 @@ function init() {
 
     window.addEventListener('resize', onWindowResize, false);
 
-    if (perf) console.timeEnd("init");
-
+    initListeners(panoLoader, depthLoader);
     loadIndex(0);
     
-    // for (var i = 0; i < road.length; i++) {
-    // }
+    if (perf) console.timeEnd("init");
 }
 
 function loadIndex(i) {
-    let panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
-    let depthLoader = new GSVPANO.PanoDepthLoader();
-    initListeners(panoLoader, depthLoader);
-
-    panoLoader.load(road[i], i);
+    if (!getId(i)) {
+        panoLoader.load(road[i], i);
+    }
 }
 
 function createMaterial() {
@@ -204,7 +203,7 @@ function initListeners(panoLoader, depthLoader) {
         // Keep track of this texture
         makeTexture(this.panoId, this.canvas);
 
-        // Load the next depth map
+        // Load the depth map
         depthLoader.load(this.panoId);
     };
 
@@ -467,7 +466,8 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     // update markers
     updateMarkers();
 
-    loadIndex(index + 2);
+    // Preload next sphere if needed
+    if ((index + 1) < road.length) loadIndex(index + 1);
 }
 
 function updateMarkers() {
