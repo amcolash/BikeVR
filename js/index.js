@@ -234,6 +234,8 @@ function initListeners(panoLoader, depthLoader) {
         document.getElementById("loading").style.display = "none";
         document.getElementById("progress").style.display = "none";
 
+        if (getId(currentSphere + 1) === this.depthMap.panoId) updateNextPano(this.depthMap.panoId);
+
         if (sphereAfterLoad === 0) {
             if (getIndex(this.depthMap.panoId) === 0) {
                 loadIndex(1);
@@ -442,11 +444,11 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     // if (!assert(panoramas[panoId] !== undefined, { "message": "panorama not defined for given panoId", "panoId": panoId })) return;
     // if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
     // if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
-
     
     var index = getIndex(panoId);
-    console.log(info[panoId], index)
-    var rotation = -info[panoId].rot;
+    if (typeof index === "undefined" || index < 0 || index >= road.length) return;
+
+    var rotation = info[panoId] ? -info[panoId].rot : 0;
     if ((index + 1) < road.length) {
         rotation += google.maps.geometry.spherical.computeHeading(road[index], road[index + 1]).toRad();
     } else {
@@ -454,6 +456,39 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     }
     mesh1.rotation.set(0, rotation, 0);
 
+    var depthMap = depthMaps[panoId];
+    var texture = panoramas[panoId];
+
+    // // Assign new textures
+    mesh1.material.uniforms.displace.value = depthMap;
+    mesh1.material.uniforms.texture.value = texture;
+
+    // Update next pano (most of the time will actually happen after load outside of here)
+    updateNextPano(nextPanoId);
+
+    // Unload previous texture (only in prod?) Seems to be ok in dev even on "reload" of texture...
+    if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
+    if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
+
+    // Wipe from memory best we can, this could get messy
+    // There are tons of issues, so ejecting even older
+    var oldId = getId(index - 2);
+    if (index - 2 >= 0 && oldId) {
+        depthMaps[oldId] = undefined;
+        panoramas[oldId] = undefined;
+        info[oldId] = undefined;
+    }
+
+    resetCamera();
+
+    // update markers
+    updateMarkers();
+
+    // Preload next sphere if needed
+    if ((index + 1) < road.length) loadIndex(index + 1);
+}
+
+function updateNextPano(nextPanoId) {
     if (nextPanoId) {
         var nextIndex = getIndex(nextPanoId);
         var nextRotation = -info[nextPanoId].rot;
@@ -464,37 +499,11 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
         }
         mesh2.rotation.set(0, nextRotation, 0);
     } else {
-        mesh2.rotation.set(0, rotation, 0);
+        mesh2.rotation.set(0, mesh1.rotation.y, 0);
     }
-
-    var depthMap = depthMaps[panoId];
-    var texture = panoramas[panoId];
-
-    // // Assign new textures
-    mesh1.material.uniforms.displace.value = depthMap;
-    mesh1.material.uniforms.texture.value = texture;
 
     mesh2.material.uniforms.displace.value = depthMaps[nextPanoId];
     mesh2.material.uniforms.texture.value = panoramas[nextPanoId];
-
-    // Unload previous texture (only in prod?) Seems to be ok in dev even on "reload" of texture...
-    if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
-    if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
-
-    // Wipe from memory best we can, this could get messy
-    if (prevPanoId) {
-        depthMaps[prevPanoId] = undefined;
-        panoramas[prevPanoId] = undefined;
-        info[prevPanoId] = undefined;
-    }
-
-    resetCamera();
-
-    // update markers
-    updateMarkers();
-
-    // Preload next sphere if needed
-    if ((index + 1) < road.length) loadIndex(index + 1);
 }
 
 function updateMarkers() {
@@ -561,7 +570,7 @@ function render() {
             velocity = bluetoothStats.speed;
         } else {
             if (keysDown["75"]) {
-                velocity -= 0.5; // key K
+                velocity = Math.max(0, velocity - 0.5); // key K
             } else if (keysDown["76"]) {
                 velocity += 0.5; // key L
             } else if (keysDown["78"]) {

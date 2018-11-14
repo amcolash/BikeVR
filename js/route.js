@@ -95,6 +95,8 @@ function getPosition() {
     if (road) {
         var tmpDst = 0;
         var prevDst = 0;
+
+        // TODO: Optimization? - Pre-compute these measurements
         for (var i = 0; i < road.length - 1; i++) {
             prevDst = tmpDst;
             tmpDst += measure(road[i], road[i + 1]);
