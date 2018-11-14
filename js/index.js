@@ -1,7 +1,7 @@
 var container;
 var scene, sceneHUD, camera, cameraHUD, mesh1, mesh2, textureHUD, contextHUD, renderer, controls, stats, rendererStats;
 
-const hq = false;
+const hq = true;
 const perf = false;
 
 const clock = new THREE.Clock();
@@ -38,6 +38,9 @@ var hudInfo = {};
 var markers = [];
 
 var currentSphere = 0;
+
+// If this is set to +1 or -1, update sphere after loading accordingly. This helps going backwards
+var sphereAfterLoad = 0;
 
 var tmpVec2 = new THREE.Vector2();
 
@@ -153,6 +156,8 @@ function init() {
 function loadIndex(i) {
     if (!getId(i)) {
         panoLoader.load(road[i], i);
+    } else {
+        handleAfterLoad();
     }
 }
 
@@ -229,28 +234,40 @@ function initListeners(panoLoader, depthLoader) {
         document.getElementById("loading").style.display = "none";
         document.getElementById("progress").style.display = "none";
 
-        if (getIndex(this.depthMap.panoId) === 0) {
-            loadIndex(1);
-        }
+        if (sphereAfterLoad === 0) {
+            if (getIndex(this.depthMap.panoId) === 0) {
+                loadIndex(1);
+            }
 
-        // Init after loading first sphere
-        if (getIndex(this.depthMap.panoId) === 1) {
-            // show 1st sphere
-            updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
+            // Init after loading first sphere
+            if (getIndex(this.depthMap.panoId) === 1) {
+                // show 1st sphere
+                updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
 
-            // update markers after everything has loaded
-            updateMarkers();
+                // update markers after everything has loaded
+                updateMarkers();
 
-            if (perf) console.timeEnd("fully loaded");
+                if (perf) console.timeEnd("fully loaded");
 
-            // Start the clock ticking
-            clock.getDelta();
+                // Start the clock ticking
+                clock.getDelta();
 
-            // start rendering
-            renderer.setAnimationLoop(render);
+                // start rendering
+                renderer.setAnimationLoop(render);
+            }
+        } else {
+            handleAfterLoad();
         }
         // }
     };
+}
+
+function handleAfterLoad() {
+    if (sphereAfterLoad !== 0) {
+        var tmpValue = sphereAfterLoad;
+        sphereAfterLoad = 0;
+        changeSphere(tmpValue);
+    }
 }
 
 function createDepthMapTexture(depthMap) {
@@ -408,7 +425,8 @@ function getId(index) {
     // })) { console.trace(); return };
 
     return Object.keys(info).filter(function(id) {
-        return info[id].index === index;
+        if (info[id]) return info[id].index === index;
+        return false;
     })[0];
 }
 
@@ -417,7 +435,7 @@ function getIndex(panoId) {
     // if (!assert(depthMaps[panoId] !== undefined, { "message": "this panoId could not be found in depthMaps", "panoId": panoId })) return;
     // if (!assert(info[panoId] !== undefined, { "message": "this panoId could not be found in info", "panoId": panoId })) return;
 
-    return info[panoId].index;
+    return info[panoId] ? info[panoId].index : undefined;
 }
 
 function updateSphere(panoId, prevPanoId, nextPanoId) {
@@ -425,7 +443,9 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     // if (!assert(depthMaps[panoId] !== undefined, { "message": "depth map not defined for given panoId", "panoId": panoId })) return;
     // if (!assert(info[panoId] !== undefined, { "message": "info not defined for given panoId", "panoId": panoId })) return;
 
+    
     var index = getIndex(panoId);
+    console.log(info[panoId], index)
     var rotation = -info[panoId].rot;
     if ((index + 1) < road.length) {
         rotation += google.maps.geometry.spherical.computeHeading(road[index], road[index + 1]).toRad();
@@ -460,6 +480,13 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     // Unload previous texture (only in prod?) Seems to be ok in dev even on "reload" of texture...
     if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
     if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
+
+    // Wipe from memory best we can, this could get messy
+    if (prevPanoId) {
+        depthMaps[prevPanoId] = undefined;
+        panoramas[prevPanoId] = undefined;
+        info[prevPanoId] = undefined;
+    }
 
     resetCamera();
 

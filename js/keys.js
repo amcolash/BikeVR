@@ -10,16 +10,16 @@ function checkKey(e) {
 
     var speed = 2;
 
-    if (e.keyCode == '82') {
-        // 'R'
+    if (e.keyCode == '82') { // R
         resetCamera();
-    } else if (e.keyCode == '90') {
-        // Z
-        changeSphere(-1);
-    } else if (e.keyCode == '88') {
-        // X
-        changeSphere(1);
-    } else if (e.keyCode == '32') {
+    } else if (e.keyCode == '90') { // Z
+        if (currentSphere > 0) {
+            sphereAfterLoad = -1;
+            loadIndex(currentSphere - 1);
+        }
+    } else if (e.keyCode == '88') { // X
+        changeSphere(1); // No need to load since we already have the next sphere loaded
+    } else if (e.keyCode == '32') { // space
         var playToggle = document.getElementById("playToggle");
         autoMove = !autoMove;
         velocity = autoMove ? 17 : 0;
@@ -34,6 +34,9 @@ function changeSphere(increment) {
     } else {
         index = index % Object.keys(panoramas).length;
     }
+
+    // Bail if things are not loaded
+    if (!getId(index)) return;
 
     progress = 0;
     for (var i = 0; i < index; i++) {
