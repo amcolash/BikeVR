@@ -6,7 +6,9 @@ const perf = false;
 
 const clock = new THREE.Clock();
 
-const panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
+// const panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
+const streetViewService = new google.maps.StreetViewService();
+const panoWorker = new Worker("/js/pano_worker.js");
 const depthWorker = new Worker("/js/depth_worker.js");
 
 // Those shaders aren't going anywhere!
@@ -153,23 +155,25 @@ function init() {
 }
 
 function initListeners() {
-    panoLoader.onPanoramaLoad = function () {
+    // Make 2 canvases
+    var offscreens = [
+        document.createElement("canvas").transferControlToOffscreen(),
+        document.createElement("canvas").transferControlToOffscreen()
+    ];
+    panoWorker.postMessage({canvas: offscreens}, offscreens);
+
+    panoWorker.onmessage = function (e) {
         // cache the lat/long
-        info[this.panoId] = {
-            lat: this.lat,
-            lng: this.lng,
-            rot: this.rotation,
-            index: this.index
-        };
+        info[e.data.panoId] = e.data.info;
 
         // Keep track of this texture
-        makeTexture(this.panoId, this.canvas);
+        makeTexture(e.data.panoId, e.data.imageBitmap);
 
         // Use web wroker to load the depth map
         var workerCanvas = document.createElement("canvas");
         var offscreen = workerCanvas.transferControlToOffscreen();
         
-        depthWorker.postMessage({panoId: this.panoId, canvas: offscreen}, [offscreen]);
+        depthWorker.postMessage({panoId: e.data.panoId, canvas: offscreen}, [offscreen]);
         depthWorker.onmessage = function(e) {
             const panoId = e.data.panoId;
 
@@ -211,7 +215,26 @@ function initListeners() {
 
 function loadIndex(i) {
     if (!getId(i)) {
-        panoLoader.load(road[i], i);
+        // panoLoader.load(road[i], i);
+        
+        var location = road[i];
+        streetViewService.getPanorama({location: location, radius: 50, source: 'outdoor'}, function (result, status) {
+            if (status === google.maps.StreetViewStatus.OK) {
+                // var h = google.maps.geometry.spherical.computeHeading(location, result.location.latLng);
+                var data = {
+                    rotation: result.tiles.centerHeading * Math.PI / 180.0,
+                    copyright: result.copyright,
+                    panoId: result.location.pano,
+                    lat: location.lat(),
+                    lng: location.lng()
+                };
+
+                panoWorker.postMessage({result: data, index: i});
+            } else {
+                panoWorker.postMessage({result: undefined, index: i});
+            }
+        });
+
     } else {
         handleAfterLoad();
     }
