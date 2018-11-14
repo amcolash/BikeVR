@@ -61,7 +61,7 @@ GSVPANO.PanoDepthLoader = function (parameters) {
         rawDepthMap = rawDepthMap.replace(/_/g,'/');
 
         // Decode and decompress data
-        compressedDepthMapData = window.atob(rawDepthMap);
+        compressedDepthMapData = atob(rawDepthMap);
         decompressedDepthMap = pako.inflate(compressedDepthMapData);
 
         return decompressedDepthMap;

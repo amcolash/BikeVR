@@ -7,7 +7,7 @@ const perf = false;
 const clock = new THREE.Clock();
 
 const panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
-const depthLoader = new GSVPANO.PanoDepthLoader();
+const depthWorker = new Worker("/js/depth_worker.js");
 
 // Those shaders aren't going anywhere!
 const vertexShader = document.getElementById("vertexShader").text;
@@ -45,7 +45,6 @@ var sphereAfterLoad = 0;
 var tmpVec2 = new THREE.Vector2();
 
 window.onload = function() {
-    if (perf) console.time("fully loaded");
     var params = decodeParameters(window.location.search);
     if (params.startLat && params.startLng && params.endLat && params.endLng) {
         var start = params.startLat + ", " + params.startLng;
@@ -147,10 +146,67 @@ function init() {
 
     window.addEventListener('resize', onWindowResize, false);
 
-    initListeners(panoLoader, depthLoader);
+    initListeners();
     loadIndex(0);
     
     if (perf) console.timeEnd("init");
+}
+
+function initListeners() {
+    panoLoader.onPanoramaLoad = function () {
+        // cache the lat/long
+        info[this.panoId] = {
+            lat: this.lat,
+            lng: this.lng,
+            rot: this.rotation,
+            index: this.index
+        };
+
+        // Keep track of this texture
+        makeTexture(this.panoId, this.canvas);
+
+        // Use web wroker to load the depth map
+        var workerCanvas = document.createElement("canvas");
+        var offscreen = workerCanvas.transferControlToOffscreen();
+        
+        depthWorker.postMessage({panoId: this.panoId, canvas: offscreen}, [offscreen]);
+        depthWorker.onmessage = function(e) {
+            const panoId = e.data.panoId;
+
+            const texture = new THREE.CanvasTexture(workerCanvas);
+            texture.minFilter = THREE.LinearFilter;
+            depthMaps[panoId] = texture;
+
+            if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
+                "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) {
+                return;
+            }
+
+            if (sphereAfterLoad === 0) {
+                if (getIndex(panoId) === 0) {
+                    loadIndex(1);
+                }
+
+                // Init after loading first sphere
+                if (getIndex(panoId) === 1) {
+                    // show 1st sphere
+                    updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
+
+                    // update markers after everything has loaded
+                    updateMarkers();
+
+                    // Start the clock ticking
+                    clock.getDelta();
+
+                    // start rendering
+                    renderer.setAnimationLoop(render);
+                }
+            }
+
+            if (getId(currentSphere + 1) === panoId) updateNextPano(panoId);
+            handleAfterLoad();
+        }
+    };
 }
 
 function loadIndex(i) {
@@ -159,6 +215,37 @@ function loadIndex(i) {
     } else {
         handleAfterLoad();
     }
+}
+
+function handleAfterLoad() {
+    if (sphereAfterLoad !== 0) {
+        var tmpValue = sphereAfterLoad;
+        sphereAfterLoad = 0;
+        changeSphere(tmpValue);
+    }
+}
+
+function makeTexture(panoId, canvas) {
+    if (perf) console.time("makeTexture");
+
+    var newCanvas = document.createElement('canvas');
+    var context = newCanvas.getContext('2d');
+
+    //set dimensions
+    newCanvas.width = canvas.width;
+    newCanvas.height = canvas.height;
+
+    //apply the old canvas to the new one
+    context.drawImage(canvas, 0, 0);
+
+    // Connect the image to the Texture
+    const texture = new THREE.CanvasTexture(newCanvas);
+    texture.minFilter = THREE.LinearFilter;
+
+    // cache the texture
+    panoramas[panoId] = texture;
+
+    if (perf) console.timeEnd("makeTexture");
 }
 
 function createMaterial() {
@@ -193,130 +280,6 @@ function resetCamera() {
     camera.position.set(0, -80, 0);
     camera.rotation.set(0, 0, 0);
     camera.updateProjectionMatrix();
-}
-
-function initListeners(panoLoader, depthLoader) {
-    panoLoader.onPanoramaLoad = function () {
-        // cache the lat/long
-        info[this.panoId] = {
-            lat: this.lat,
-            lng: this.lng,
-            rot: this.rotation,
-            index: this.index
-        };
-
-        // Keep track of this texture
-        makeTexture(this.panoId, this.canvas);
-
-        // Load the depth map
-        depthLoader.load(this.panoId);
-    };
-
-    depthLoader.onDepthLoad = function () {
-        // cache the depth map
-        depthMaps[this.depthMap.panoId] = createDepthMapTexture(this.depthMap);
-
-        if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
-            "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) {
-            document.getElementById("progress").style.backgroundColor = "red";
-            return;
-        }
-
-        // hide the loading messages
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("progress").style.display = "none";
-
-        if (sphereAfterLoad === 0) {
-            if (getIndex(this.depthMap.panoId) === 0) {
-                loadIndex(1);
-            }
-
-            // Init after loading first sphere
-            if (getIndex(this.depthMap.panoId) === 1) {
-                // show 1st sphere
-                updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
-
-                // update markers after everything has loaded
-                updateMarkers();
-
-                if (perf) console.timeEnd("fully loaded");
-
-                // Start the clock ticking
-                clock.getDelta();
-
-                // start rendering
-                renderer.setAnimationLoop(render);
-            }
-        }
-
-        if (getId(currentSphere + 1) === this.depthMap.panoId) updateNextPano(this.depthMap.panoId);
-        handleAfterLoad();
-    };
-}
-
-function handleAfterLoad() {
-    if (sphereAfterLoad !== 0) {
-        var tmpValue = sphereAfterLoad;
-        sphereAfterLoad = 0;
-        changeSphere(tmpValue);
-    }
-}
-
-function createDepthMapTexture(depthMap) {
-    if (perf) console.time("createDepthMap");
-    var x, y, canvas, context, image, w, h, c;
-
-    canvas = document.createElement("canvas");
-    context = canvas.getContext('2d');
-
-    w = depthMap.width;
-    h = depthMap.height;
-
-    canvas.setAttribute('width', w);
-    canvas.setAttribute('height', h);
-
-    image = context.getImageData(0, 0, w, h);
-
-    for (y = 0; y < h; ++y) {
-        for (x = 0; x < w; ++x) {
-            c = depthMap.depthMap[y * w + x] / 50 * 255;
-            image.data[4 * (y * w + x)] = c;
-            image.data[4 * (y * w + x) + 1] = c;
-            image.data[4 * (y * w + x) + 2] = c;
-            image.data[4 * (y * w + x) + 3] = 255;
-        }
-    }
-
-    context.putImageData(image, 0, 0);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.minFilter = THREE.LinearFilter;
-
-    if (perf) console.timeEnd("createDepthMap");
-    return texture;
-}
-
-function makeTexture(panoId, canvas) {
-    if (perf) console.time("makeTexture");
-
-    var newCanvas = document.createElement('canvas');
-    var context = newCanvas.getContext('2d');
-
-    //set dimensions
-    newCanvas.width = canvas.width;
-    newCanvas.height = canvas.height;
-
-    //apply the old canvas to the new one
-    context.drawImage(canvas, 0, 0);
-
-    // Connect the image to the Texture
-    const texture = new THREE.CanvasTexture(newCanvas);
-    texture.minFilter = THREE.LinearFilter;
-
-    // cache the texture
-    panoramas[panoId] = texture;
-
-    if (perf) console.timeEnd("makeTexture");
 }
 
 // TODO: Actually query based on current city

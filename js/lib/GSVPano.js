@@ -97,7 +97,7 @@ GSVPANO.PanoLoader = function (parameters) {
 		_count = 0;
 		_total = w * h;
 		
-		var failed = window.localStorage.getItem('failedImages');
+		var failed = localStorage.getItem('failedImages');
 		failed = failed ? JSON.parse(failed) : [];
 
 		for( y = 0; y < h; y++) {
@@ -116,10 +116,10 @@ GSVPANO.PanoLoader = function (parameters) {
 							var data = _ctx3.getImageData(20, 20, 5, 1).data;
 
 							if (data.toString() === "0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255") {
-								var failedImages = window.localStorage.getItem('failedImages');
+								var failedImages = localStorage.getItem('failedImages');
 								failedImages = failedImages ? JSON.parse(failedImages) : [];
 								failedImages.push(url);
-								window.localStorage.setItem('failedImages', JSON.stringify(failedImages));
+								localStorage.setItem('failedImages', JSON.stringify(failedImages));
 							}
 
 							self.composeFromTile(x, y, this);
