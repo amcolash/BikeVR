@@ -61,8 +61,8 @@ GSVPANO.PanoLoader = function (parameters) {
 	};
 
 	this.composeFromTile = function (x, y, texture) {
-		// _ctx1.drawImage(texture, x * 512, y * 512);
-		// _ctx2.drawImage(texture, x * 512, y * 512);
+		_ctx1.drawImage(texture, x * 512, y * 512);
+		_ctx2.drawImage(texture, x * 512, y * 512);
 		_count++;
 		
 		var p = Math.round(_count * 100 / _total);
@@ -75,9 +75,12 @@ GSVPANO.PanoLoader = function (parameters) {
 			var h = Math.pow(2, _zoom - 1);
 			var data = _ctx2.getImageData(0, (h * 512) - 1, 5, 1).data;
 			
+			
 			if (data.toString() === "0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255") {
-				this.canvas = _canvas1;
+				// this.canvas = _canvas1;
+				this.canvas = _canvas2;
 				this.dimensions = 416;
+				_ctx2.drawImage(_canvas1, 0, 0, _canvas2.width, _canvas2.height);
 			} else {
 				this.canvas = _canvas2;
 				this.dimensions = 512;
@@ -111,7 +114,15 @@ GSVPANO.PanoLoader = function (parameters) {
 				(function (x, y, url) {
 					fetch(url, {"credentials":"omit","headers":{"sec-metadata":"destination=\"\", site=cross-site"},"referrerPolicy":"no-referrer-when-downgrade","body":null,"method":"GET","mode":"cors"})
 					// fetch(url)
-						.then(response => response.blob())
+						.then(response => {
+							// TODO
+							if (response.status === "200") {
+								// A-OK
+							} else {
+								// GOT A 400 and need to change dimensions
+							}
+							return response.blob();
+						})
 						.then(blob => createImageBitmap(blob))
 						.then(image => {
 							self.composeFromTile(x, y, image);
