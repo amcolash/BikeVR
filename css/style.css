@@ -39,6 +39,7 @@ body {
 
 #controls button {
     font-size: 24px;
+    margin: 4px;
 }
 
 #vr #map {
