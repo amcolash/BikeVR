@@ -207,8 +207,6 @@ function initListeners() {
 
 function loadIndex(i) {
     if (!getId(i)) {
-        // panoLoader.load(road[i], i);
-        
         var location = road[i];
         streetViewService.getPanorama({location: location, radius: 50, source: 'outdoor'}, function (result, status) {
             if (status === google.maps.StreetViewStatus.OK) {
@@ -522,57 +520,54 @@ function onWindowResize() {
 
 var counter = 0;
 var index = 0;
-var blend = 1200;
+var blend = 2250;
 
 function render() {
     var delta = clock.getDelta();
     
-    // Only update once things are loaded up
-    // if (currentLoaded == road.length - 1) {
-        // figure out velocity each frame
-        if (bluetoothStats) {
-            velocity = bluetoothStats.speed;
-        } else {
-            if (keysDown["75"]) {
-                velocity = Math.max(0, velocity - 0.5); // key K
-            } else if (keysDown["76"]) {
-                velocity += 0.5; // key L
-            } else if (keysDown["78"]) {
-                velocity = -17; // key N
-            } else if (keysDown["77"]) {
-                velocity = 17; // key M
-            } else if (!autoMove) {
-                velocity = 0;
-            }
+    // figure out velocity each frame
+    if (bluetoothStats) {
+        velocity = bluetoothStats.speed;
+    } else {
+        if (keysDown["75"]) {
+            velocity = Math.max(0, velocity - 0.5); // key K
+        } else if (keysDown["76"]) {
+            velocity += 0.5; // key L
+        } else if (keysDown["78"]) {
+            velocity = -17; // key N
+        } else if (keysDown["77"]) {
+            velocity = 17; // key M
+        } else if (!autoMove) {
+            velocity = 0;
         }
+    }
 
-        if (velocity !== 0 || true) {
-            var mps = velocity * 1000 / 3600;
-            progress = (progress + delta * mps) % dist;
+    if (velocity !== 0 || true) {
+        var mps = velocity * 1000 / 3600;
+        progress = (progress + delta * mps) % dist;
 
-            currPos.setCenter(getPosition());
-            if (map) map.setCenter(currPos.getCenter());
+        currPos.setCenter(getPosition());
+        if (map) map.setCenter(currPos.getCenter());
 
-            var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 2.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
-            
-            // This way we don't need angles to figure things out and things blend ok
-            movement *= -currentSign * 0.9;
+        var movement = clamp(measure(currPos.getCenter(), currPano.getCenter()) * 2.5, -sphereRadius * 0.75, sphereRadius * 0.75) * movementSpeed;
+        
+        // This way we don't need angles to figure things out and things blend ok
+        movement *= -currentSign * 0.9;
 
-            mesh1.position.set(movement, -1, 0);
-            mesh2.position.set(sphereRadius * 0.375 * movementSpeed, -1, 0);
-            mesh2.position.set(blend, -1, 0);
-        }
+        mesh1.position.set(movement, -1, 0);
+        // mesh2.position.set(sphereRadius * 0.375 * movementSpeed, -1, 0);
+        mesh2.position.set(movement + blend, -1, 0);
+    }
 
-        if (sphereProgress > 1 - alphaBlend) {
-            mesh1.material.uniforms.nextBlend.value = (1 - sphereProgress) * (1 / alphaBlend);
-            mesh2.material.uniforms.nextBlend.value = 1 - ((1 - sphereProgress) * (1 / alphaBlend));
-            mesh2.visible = true;
-        } else {
-            mesh1.material.uniforms.nextBlend.value = 1;
-            mesh2.material.uniforms.nextBlend.value = 0;
-            mesh2.visible = false;
-        }
-    // }
+    if (sphereProgress > 1 - alphaBlend) {
+        mesh1.material.uniforms.nextBlend.value = (1 - sphereProgress) * (1 / alphaBlend);
+        mesh2.material.uniforms.nextBlend.value = 1 - ((1 - sphereProgress) * (1 / alphaBlend));
+        mesh2.visible = true;
+    } else {
+        mesh1.material.uniforms.nextBlend.value = 1;
+        mesh2.material.uniforms.nextBlend.value = 0;
+        mesh2.visible = false;
+    }
 
     // Check if we need to update hud
     // counter += delta;
