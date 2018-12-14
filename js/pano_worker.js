@@ -1,6 +1,6 @@
 importScripts("/js/lib/GSVPano.js");
 
-const hq = false;
+const hq = true;
 const panoLoader = new GSVPANO.PanoLoader();
 panoLoader.setZoom(hq ? 3 : 1 );
 panoLoader.onPanoramaLoad = onPanoramaLoad;

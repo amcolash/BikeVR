@@ -73,6 +73,12 @@ GSVPANO.PanoLoader = function (parameters) {
 				this.dimensions = 512;
 			}
 
+			if (_zoom > 1) {
+				this.canvas = new OffscreenCanvas(_canvas2.width / 2, _canvas2.height / 2);
+				var ctx = this.canvas.getContext("2d");
+				ctx.drawImage(_canvas2, 0, 0, _canvas2.width, _canvas2.height, 0, 0, this.canvas.width, this.canvas.height);
+			}
+
 			if (this.onPanoramaLoad) {
 				this.onPanoramaLoad();
 			}

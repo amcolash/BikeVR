@@ -153,13 +153,6 @@ function init() {
 }
 
 function initListeners() {
-    // // Make 2 canvases
-    // var offscreens = [
-    //     document.createElement("canvas").transferControlToOffscreen(),
-    //     document.createElement("canvas").transferControlToOffscreen()
-    // ];
-    // panoWorker.postMessage({canvas: offscreens}, offscreens);
-
     panoWorker.onmessage = function (e) {
         // cache the lat/long
         info[e.data.panoId] = e.data.info;
@@ -187,6 +180,7 @@ function initListeners() {
             if (sphereAfterLoad === 0) {
                 if (getIndex(panoId) === 0) {
                     loadIndex(1);
+                    return;
                 }
 
                 // Init after loading first sphere
