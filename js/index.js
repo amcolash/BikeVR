@@ -66,6 +66,12 @@ function init() {
     sceneHUD = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 20000);
 
+    // Add in a rig so that the base rotation of the camera can be set in vr
+    const rig = new THREE.Object3D();
+    rig.rotation.set(0, -Math.PI / 2, 0);
+    rig.add(camera);
+    scene.add(rig);
+
     controls = new THREE.FirstPersonControls(camera);
     controls.lookSpeed = 1.25;
     controls.movementSpeed = 300;
@@ -109,7 +115,7 @@ function init() {
     var mapToggle = document.getElementById('mapToggle');
 
     if (hasVR()) {
-        document.body.appendChild(WEBVR.createButton(renderer));
+        document.body.appendChild(WEBVR.createButton(renderer, { frameOfReferenceType: 'eye-level' }));
         renderer.vr.enabled = true;
 
         // Hide map on mobile by default
@@ -582,8 +588,7 @@ function render() {
     renderer.render(scene, camera);
 
     // Update stats here to profile the scene render, not the hud render
-    stats.update();	
+    stats.update();
     rendererStats.update(renderer);
-
     renderer.render(sceneHUD, cameraHUD);
 }
