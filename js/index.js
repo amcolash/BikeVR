@@ -1,12 +1,10 @@
 var container;
 var scene, sceneHUD, camera, cameraHUD, mesh1, mesh2, textureHUD, contextHUD, renderer, controls, stats, rendererStats;
 
-const hq = true;
 const perf = false;
 
 const clock = new THREE.Clock();
 
-// const panoLoader = new GSVPANO.PanoLoader({ zoom: hq ? 3 : 1 });
 const streetViewService = new google.maps.StreetViewService();
 const panoWorker = new Worker("/js/pano_worker.js");
 const depthWorker = new Worker("/js/depth_worker.js");
@@ -155,12 +153,12 @@ function init() {
 }
 
 function initListeners() {
-    // Make 2 canvases
-    var offscreens = [
-        document.createElement("canvas").transferControlToOffscreen(),
-        document.createElement("canvas").transferControlToOffscreen()
-    ];
-    panoWorker.postMessage({canvas: offscreens}, offscreens);
+    // // Make 2 canvases
+    // var offscreens = [
+    //     document.createElement("canvas").transferControlToOffscreen(),
+    //     document.createElement("canvas").transferControlToOffscreen()
+    // ];
+    // panoWorker.postMessage({canvas: offscreens}, offscreens);
 
     panoWorker.onmessage = function (e) {
         // cache the lat/long

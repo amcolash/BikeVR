@@ -8,23 +8,16 @@ GSVPANO.PanoLoader = function (parameters) {
 		_panoId,
 		_count = 0,
 		_total = 0,
-		_canvas1,
-		_ctx1,
-		_canvas2,
-		_ctx2,
+		_canvas1 = new OffscreenCanvas(1, 1),
+		_ctx1 = _canvas1.getContext("2d"),
+		_canvas2 = new OffscreenCanvas(1, 1),
+		_ctx2 = _canvas2.getContext("2d"),
 		panoId = '',
 		cacheBust = false,
 		rotation = 0,
 		copyright = '',
 		onSizeChange = null,
 		onPanoramaLoad = null;
-	
-	this.initCanvas = function(canvas) {
-		_canvas1 = canvas[0];
-		_ctx1 = _canvas1.getContext('2d');
-		_canvas2 = canvas[1];
-		_ctx2 = _canvas2.getContext('2d');
-	}
 
 	this.setProgress = function (p) {
 		if (this.onProgress) {
@@ -41,23 +34,19 @@ GSVPANO.PanoLoader = function (parameters) {
 	};
 
 	this.adaptTextureToZoom = function () {
-		if (_canvas1 && _ctx1) {
-			var w1 = 416 * Math.pow(2, _zoom),
-				h1 = (416 * Math.pow(2, _zoom - 1));
-			_canvas1.width = w1;
-			_canvas1.height = h1;
-			_ctx1.translate( _canvas1.width, 0);
-			_ctx1.scale(-1, 1);
-		}
+		var w1 = 416 * Math.pow(2, _zoom),
+			h1 = (416 * Math.pow(2, _zoom - 1));
+		_canvas1.width = w1;
+		_canvas1.height = h1;
+		_ctx1.translate(_canvas1.width, 0);
+		_ctx1.scale(-1, 1);
 
-		if (_canvas2 && _ctx2) {
-			var w2 = 512 * Math.pow(2, _zoom),
-				h2 = (512 * Math.pow(2, _zoom - 1));
-			_canvas2.width = w2;
-			_canvas2.height = h2;
-			_ctx2.translate(_canvas2.width, 0);
-			_ctx2.scale(-1, 1);
-		}
+		var w2 = 512 * Math.pow(2, _zoom),
+			h2 = (512 * Math.pow(2, _zoom - 1));
+		_canvas2.width = w2;
+		_canvas2.height = h2;
+		_ctx2.translate(_canvas2.width, 0);
+		_ctx2.scale(-1, 1);
 	};
 
 	this.composeFromTile = function (x, y, texture) {
@@ -75,14 +64,12 @@ GSVPANO.PanoLoader = function (parameters) {
 			var h = Math.pow(2, _zoom - 1);
 			var data = _ctx2.getImageData(0, (h * 512) - 1, 5, 1).data;
 			
-			
+			this.canvas = _canvas2;
 			if (data.toString() === "0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255") {
-				// this.canvas = _canvas1;
-				this.canvas = _canvas2;
 				this.dimensions = 416;
+				_ctx2.resetTransform();
 				_ctx2.drawImage(_canvas1, 0, 0, _canvas2.width, _canvas2.height);
 			} else {
-				this.canvas = _canvas2;
 				this.dimensions = 512;
 			}
 
