@@ -532,8 +532,14 @@ function render() {
     var delta = clock.getDelta();
     
     // figure out velocity each frame
+    velocity = autoMove ? 17 : 0;
     if (bluetoothStats) {
         velocity = bluetoothStats.speed;
+    } else if (renderer.vr.getDevice()) {
+        var gamepads = navigator.getGamepads();
+        if (gamepads && gamepads[0] && gamepads[0].buttons) {
+            velocity = gamepads[0].buttons[0].touched ? 17 : 0;
+        }
     } else {
         if (keysDown["75"]) {
             velocity = Math.max(0, velocity - 0.5); // key K
@@ -543,14 +549,12 @@ function render() {
             velocity = -17; // key N
         } else if (keysDown["77"]) {
             velocity = 17; // key M
-        } else if (!autoMove) {
-            velocity = 0;
         }
     }
 
     if (velocity !== 0 || true) {
         var mps = velocity * 1000 / 3600;
-        progress = (progress + delta * mps) % dist;
+        progress = clamp(progress + delta * mps, 0, dist);
 
         currPos.setCenter(getPosition());
         if (map) map.setCenter(currPos.getCenter());
@@ -588,7 +592,8 @@ function render() {
     renderer.render(scene, camera);
 
     // Update stats here to profile the scene render, not the hud render
-    stats.update();
     rendererStats.update(renderer);
-    renderer.render(sceneHUD, cameraHUD);
+    stats.update();
+
+    // renderer.render(sceneHUD, cameraHUD);
 }

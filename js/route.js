@@ -48,7 +48,6 @@ if (start && end && playToggle) {
     });
 }
 
-customRoute();
 
 var mapElem = document.getElementById('map');
 if (mapElem) {
@@ -56,10 +55,11 @@ if (mapElem) {
         zoom: 4,
         center: { lat: 39.50, lng: -98.35 } // center of us
     });
-
+    
     var delta = 100; // milliseconds
-
+    
     if (start && end) {
+        customRoute();
         setInterval(function () {
             if (autoMove && currPano && currPos && road && road.length > 0) {
                 var mps = velocity * 1000 / 3600;
