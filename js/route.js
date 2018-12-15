@@ -206,7 +206,7 @@ function getRoute(request) {
             var time = (miles / 10 * 60).toFixed(0);
 
             if (routeLength) {
-                routeLength.innerHTML = road.length + " stops, " + time + " minutes, " + miles + " miles, " + km + " km";
+                routeLength.innerHTML = road.length + " spheres, " + time + " minutes, " + miles + " miles, " + km + " km";
             }
 
             if (startButton) startButton.disabled = false;
