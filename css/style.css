@@ -59,9 +59,23 @@ body {
 
 #route #map {
     width: 100%;
-    height: 800px;
+    height: 515px;
     margin: 10px 0;
+    border-radius: 4px;
 }
+
+@media screen and (min-width: 48em) {
+    #route #map {
+        height: 750px;
+    }
+}
+
+@media screen and (min-width: 1070px) {
+    #route #map {
+        height: 790px;
+    }
+}
+
 
 #endLoc, #startLoc {
     padding: 0.5em 0.4em 0.2em 0.2em;
