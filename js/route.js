@@ -22,10 +22,20 @@ var routeLength = document.getElementById('routeLength');
 var directionsButton = document.getElementById('directions');
 var startButton = document.getElementById('forward');
 var backButton = document.getElementById('back');
+var startLocButton = document.getElementById('startLoc');
+var endLocButton = document.getElementById('endLoc');
 
 if (directionsButton) directionsButton.addEventListener('click', () => customRoute());
 if (startButton) startButton.addEventListener('click', () => startRoute());
 if (backButton) backButton.addEventListener('click', () => window.location.href = '/route.html');
+
+if (startLocButton) startLocButton.addEventListener('click', () => navigator.geolocation.getCurrentPosition(location => {
+    start.value = location.coords.latitude + ", " + location.coords.longitude;
+}));
+
+if (endLocButton) endLocButton.addEventListener('click', () => navigator.geolocation.getCurrentPosition(location => {
+    end.value = location.coords.latitude + ", " + location.coords.longitude;
+}));
 
 if (start) startAutocomplete = new google.maps.places.Autocomplete(start);
 if (end) endAutocomplete = new google.maps.places.Autocomplete(end);
@@ -37,6 +47,8 @@ if (start && end && playToggle) {
         playToggle.textContent = autoMove ? "Autoplay: True" : "Autoplay: False";
     });
 }
+
+customRoute();
 
 var mapElem = document.getElementById('map');
 if (mapElem) {
@@ -58,7 +70,6 @@ if (mapElem) {
         }, delta);
     }
 }
-
 
 function customRoute(customStart, customEnd) {
     if ((customStart && customEnd) || (start.value && start.value.length > 0 && end.value && end.value.length > 0)) {
@@ -83,11 +94,13 @@ function defaultRoute() {
 }
 
 function startRoute() {
-    var startLocation = road[0];
-    var endLocation = road[road.length - 1];
-    var startString = 'startLat=' + startLocation.lat() + '&startLng=' + startLocation.lng();
-    var endString = 'endLat=' + endLocation.lat() + '&endLng=' + endLocation.lng();
-    window.location.href = '/?' + startString + '&' + endString;
+    if (road && road.length > 0) {
+        var startLocation = road[0];
+        var endLocation = road[road.length - 1];
+        var startString = 'startLat=' + startLocation.lat() + '&startLng=' + startLocation.lng();
+        var endString = 'endLat=' + endLocation.lat() + '&endLng=' + endLocation.lng();
+        window.location.href = '/?' + startString + '&' + endString;
+    }
 }
 
 function getPosition() {
@@ -153,6 +166,10 @@ function getRoute(request) {
         markers[i] = null;
     }
     markers.length = 0;
+
+    if (routeLength) {
+        routeLength.innerHTML = "Loading Route...";
+    }
 
     directionsService.route(request, function (result, status) {
         if (assert(status == 'OK', { "message": "no routes found", "start": request.origin, "end": request.destination })) {
@@ -249,8 +266,6 @@ function getRoute(request) {
                 }
             }
 
-            // console.log("path length: " + path.length);
-
             // output for map coords
             // var s = "";
             // for (var i = 0; i < path.length; i++) {
@@ -265,7 +280,6 @@ function getRoute(request) {
             // }
             // s = s.substring(0, s.length - 1);
             // console.log(s);
-        
         }
     });
 }

@@ -6,29 +6,47 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
+    <link rel="stylesheet" href="css/pure-min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-    <div id="route" class="center">
-        <span>Start:</span>
-        <input type="text" size="50" id="startLocation" value="22 E Dayton St, Madison WI">
+    <form id="route" class="center pure-form">
+        <fieldset>
+            <div class="pure-g">
+                <div class="pure-u-1 pure-u-md-1-3">
+                    <label for="startLocation">Start:</label>
+                    <input class="pure-input-3-4" type="text" id="startLocation" value="22 E Dayton St, Madison WI">
+                    <button type="button" class="pure-button" id="startLoc">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-navigation"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+                    </button>
+                </div>
 
-        <span>End:</span>
-        <input type="text" size="50" id="endLocation" value="424 W Mifflin St, Madison WI">
+                <div class="pure-u-1 pure-u-md-1-3">
+                    <label for="endLocation">End:</label>
+                    <input class="pure-input-3-4" type="text" id="endLocation" value="424 W Mifflin St, Madison WI">
+                    <button type="button" class="pure-button" id="endLoc">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-navigation"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+                    </button>
+                </div>
 
-        <button id="directions">Get Route</button>
-        <button id="forward" disabled>Ride It!</button>
+                <div class="pure-u-1 pure-u-md-1-3">
+                    <button type="button" class="pure-button" id="directions">Get Route</button>
+                    <button type="button" class="pure-button" id="forward" disabled>Ride It!</button>
+                    <button type="button" class="pure-button" id="playToggle" class="margin-top">Autoplay: False</button>
+                    <br>
+                </div>
+            </div>
+
+            <div id="routeLength"></div>
+
+        </fieldset>
 
         <div id="map"></div>
-
-        <span id="routeLength"></span>
-        <br>
-        <button id="playToggle" class="margin-top">Autoplay: False</button>
-    </div>
+    </form>
 
     <script src="https://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyB6UARVCUzMTt42FlGx-HRWlPPr2NJhzVM" type="text/javascript"></script>
-    <script src="js/lib/jquery.min.js" type="text/javascript"></script>
+    <!-- <script src="js/lib/jquery.min.js" type="text/javascript"></script> -->
     <script src="js/lib/v3_epoly.js" type="text/javascript"></script>
     
     <script src="js/util.js" type="text/javascript"></script>

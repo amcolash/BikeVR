@@ -5,87 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Bluetooth Test</title>
-</head>
-<body style="font-family: sans-serif;">
-    <label for="rim">Rim</label>
-    <select id="rim" name="rim" onchange="updateWheel();" style="margin-right: 10px;">
-        <option value="203">12.5"</option>
-        <option value="305">16"</option>
-        <option value="406">20"</option>
-        <option value="507">24" BMX/Kids Bikes</option>
-        <option value="520">24" Terry Bicycles</option>
-        <option value="540">24"</option>
-        <option value="540">24" Schwinn</option>
-        <option value="559">26"</option>
-        <option value="571">650c</option>
-        <option value="584">650b</option>
-        <option value="584">27.5</option>
-        <option value="584">26 x 1 1/2"</option>
-        <option value="590">650a</option>
-        <option value="590">26 x 1 3/8"</option>
-        <option value="597">650</option>
-        <option value="597">26 x 1 1/4"</option>
-        <option value="622">29er</option>
-        <option value="622" selected="selected">700</option>
-        <option value="630">27 inch</option>
-    </select>
 
-    <label for="tire">Tire</label>
-    <select id="tire" name="tire" onchange="updateWheel();" style="margin-right: 10px;">
-        <option value="18">18C</option>
-        <option value="19">19C</option>
-        <option value="20">20C</option>
-        <option value="21">21C</option>
-        <option value="23">23C</option>
-        <option value="25" selected="selected">25C</option>
-        <option value="28">28C</option>
-        <option value="30">30C</option>
-        <option value="32">32C</option>
-        <option value="35">35C</option>
-        <option value="38">38C</option>
-        <option value="40">40C</option>
-        <option value="44">44C</option>
-        <option value="50">50C</option>
-        <option value="56">56C</option>
-        <option value="25.4">1.00 inch</option>
-        <option value="28.575 ">1 1/8 inch</option>
-        <option value="31.75">1.25 inch</option>
-        <option value="34.925">1 3/8 inch</option>
-        <option value="35.56">1.4 inch</option>
-        <option value="38.1">1.5 inch</option>
-        <option value="44.45">1.75 inch</option>
-        <option value="49.5">1.95 inch</option>
-        <option value="50.8">2.00 inch</option>
-        <option value="53.34">2.10 inch</option>
-        <option value="54">2.125 inch</option>
-        <option value="55.88">2.20 inch</option>
-        <option value="57.15">2.25 inch</option>
-        <option value="58.42">2.30 inch</option>
-        <option value="59.69">2.35 inch</option>
-        <option value="60.69">2.40 inch</option>
-        <option value="63.50">2.50 inch</option>
-        <option value="66.04">2.60 inch</option>
-        <option value="68.58">2.70 inch</option>
-        <option value="71.12">2.80 inch</option>
-        <option value="73.66">2.90 inch</option>
-        <option value="76.20">3.0 inch</option>
-        <option value="78.74">3.1 inch</option>
-        <option value="81.28">3.2 inch</option>
-        <option value="83.82">3.3 inch</option>
-        <option value="86.36">3.4 inch</option>
-        <option value="88.90">3.5 inch</option>
-        <option value="91.44">3.6 inch</option>
-        <option value="93.98">3.7 inch</option>
-        <option value="96.52">3.8 inch</option>
-        <option value="99.06">3.9 inch</option>
-        <option value="101.6">4.0 inch</option>
-    </select>
-    <label for="mm">Wheel mm</label>
-    <input name="mm" id="mm" size="5" disabled>
+    <link rel="stylesheet" href="css/pure-min.css">
+</head>
+<body style="font-family: sans-serif; padding: 1em;">
+    <form class="pure-form">
+        <fieldset>
+            <label for="rim">Rim</label>
+            <select id="rim" name="rim" onchange="updateWheel();" style="margin-right: 10px;">
+                <option value="203">12.5"</option>
+                <option value="305">16"</option>
+                <option value="406">20"</option>
+                <option value="507">24" BMX/Kids Bikes</option>
+                <option value="520">24" Terry Bicycles</option>
+                <option value="540">24"</option>
+                <option value="540">24" Schwinn</option>
+                <option value="559">26"</option>
+                <option value="571">650c</option>
+                <option value="584">650b</option>
+                <option value="584">27.5</option>
+                <option value="584">26 x 1 1/2"</option>
+                <option value="590">650a</option>
+                <option value="590">26 x 1 3/8"</option>
+                <option value="597">650</option>
+                <option value="597">26 x 1 1/4"</option>
+                <option value="622">29er</option>
+                <option value="622" selected="selected">700</option>
+                <option value="630">27 inch</option>
+            </select>
+
+            <label for="tire">Tire</label>
+            <select id="tire" name="tire" onchange="updateWheel();" style="margin-right: 10px;">
+                <option value="18">18C</option>
+                <option value="19">19C</option>
+                <option value="20">20C</option>
+                <option value="21">21C</option>
+                <option value="23">23C</option>
+                <option value="25" selected="selected">25C</option>
+                <option value="28">28C</option>
+                <option value="30">30C</option>
+                <option value="32">32C</option>
+                <option value="35">35C</option>
+                <option value="38">38C</option>
+                <option value="40">40C</option>
+                <option value="44">44C</option>
+                <option value="50">50C</option>
+                <option value="56">56C</option>
+                <option value="25.4">1.00 inch</option>
+                <option value="28.575 ">1 1/8 inch</option>
+                <option value="31.75">1.25 inch</option>
+                <option value="34.925">1 3/8 inch</option>
+                <option value="35.56">1.4 inch</option>
+                <option value="38.1">1.5 inch</option>
+                <option value="44.45">1.75 inch</option>
+                <option value="49.5">1.95 inch</option>
+                <option value="50.8">2.00 inch</option>
+                <option value="53.34">2.10 inch</option>
+                <option value="54">2.125 inch</option>
+                <option value="55.88">2.20 inch</option>
+                <option value="57.15">2.25 inch</option>
+                <option value="58.42">2.30 inch</option>
+                <option value="59.69">2.35 inch</option>
+                <option value="60.69">2.40 inch</option>
+                <option value="63.50">2.50 inch</option>
+                <option value="66.04">2.60 inch</option>
+                <option value="68.58">2.70 inch</option>
+                <option value="71.12">2.80 inch</option>
+                <option value="73.66">2.90 inch</option>
+                <option value="76.20">3.0 inch</option>
+                <option value="78.74">3.1 inch</option>
+                <option value="81.28">3.2 inch</option>
+                <option value="83.82">3.3 inch</option>
+                <option value="86.36">3.4 inch</option>
+                <option value="88.90">3.5 inch</option>
+                <option value="91.44">3.6 inch</option>
+                <option value="93.98">3.7 inch</option>
+                <option value="96.52">3.8 inch</option>
+                <option value="99.06">3.9 inch</option>
+                <option value="101.6">4.0 inch</option>
+            </select>
+            <label for="mm">Wheel mm</label>
+            <input name="mm" id="mm" size="5" readonly>
+        </fieldset>
+    </form>
 
     <hr>
 
-    <button id="connect">Connect</button>
+    <button class="pure-button" id="connect">Connect</button>
 
     <div id="bluetoothInfo" style="display: none;">
         <h2>Stats</h2>
