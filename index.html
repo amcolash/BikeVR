@@ -24,33 +24,10 @@
 
 		<!-- Shaders! -->
 		<script type="x-shader/x-vertex" id="vertexShader">
-			uniform sampler2D displace;
 			
-			varying vec2 vUv;
-
-			void main() {
-				// Pass uv to fragment
-				vUv = uv;
-
-				float df = 20.0 * texture2D(displace, uv).r;
-				vec4 displacedPosition = vec4(normal * df, 0.0) + vec4(position, 1.0) / 250.0;
-
-				// Clear out ripples at base center
-				displacedPosition.y = max(-1.4, displacedPosition.y);
-
-				gl_Position = projectionMatrix * modelViewMatrix * displacedPosition;
-			}
 		</script>
 		<script type="x-shader/x-fragment" id="fragmentShader">
-			uniform sampler2D texture;
-			uniform float nextBlend;
-
-			varying vec2 vUv;
 			
-			void main() {
-				vec4 color = vec4(texture2D(texture, vUv).rgb, nextBlend);
-				gl_FragColor = color;
-			}
 		</script>
 
 		<!-- Maybe add in the api key here? -->
@@ -69,6 +46,8 @@
 		<script src="js/lib/FirstPersonControls.js" type="text/javascript"></script>
 		<script src="js/lib/WebVR.js" type="text/javascript"></script>
 
+		<script src="js/fragment.glsl.js" type="text/javascript"></script>
+		<script src="js/vertex.glsl.js" type="text/javascript"></script>
 		<script src="js/route.js" type="text/javascript"></script>
 		<script src="js/bluetooth.js" type="text/javascript"></script>
 		<script src="js/keys.js" type="text/javascript"></script>

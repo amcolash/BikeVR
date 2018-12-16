@@ -9,10 +9,6 @@ const streetViewService = new google.maps.StreetViewService();
 const panoWorker = new Worker("/js/pano_worker.js");
 const depthWorker = new Worker("/js/depth_worker.js");
 
-// Those shaders aren't going anywhere!
-const vertexShader = document.getElementById("vertexShader").text;
-const fragmentShader = document.getElementById("fragmentShader").text;
-
 // Draw wireframes
 const wireframe = false;
 
