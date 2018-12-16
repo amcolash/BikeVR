@@ -13,16 +13,13 @@ const depthWorker = new Worker("/js/depth_worker.js");
 const vertexShader = document.getElementById("vertexShader").text;
 const fragmentShader = document.getElementById("fragmentShader").text;
 
-// Draw points
-const drawPoints = false;
-
 // Draw wireframes
 const wireframe = false;
 
 // Sphere setup
 const sphereRadius = 100;
-const verticalSphereSegments = 70;
-const horizontalSphereSegments = 50;
+const verticalSphereSegments = 60;
+const horizontalSphereSegments = 90;
 
 // Movement offset
 const movementSpeed = 40;
@@ -34,10 +31,11 @@ var depthMaps = {};
 var info = {};
 
 var hudInfo = {};
-
 var markers = [];
 
 var currentSphere = 0;
+
+// progress = 17;
 
 // If this is set to +1 or -1, update sphere after loading accordingly. This helps going backwards
 var sphereAfterLoad = 0;
@@ -60,6 +58,7 @@ function init() {
     if (perf) console.time("init");
 
     container = document.createElement('div');
+    // container.style.display = "none";
     document.body.appendChild(container);
 
     scene = new THREE.Scene();
