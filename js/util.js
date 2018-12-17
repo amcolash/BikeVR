@@ -65,6 +65,10 @@ function measureGeo(lat1, lon1, lat2, lon2) {
     return d * 1000; // meters
 }
 
+function subtractGeo(p1, p2) {
+    return new google.maps.LatLng(p2.lat() - p1.lat(), p2.lng() - p1.lng());
+}
+
 // ---------------------------------- Canvas Functions --------------------------------
 
 // Shamelessly stolen from: https://codepen.io/ashblue/pen/fGkma

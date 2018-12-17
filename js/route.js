@@ -71,7 +71,7 @@ if (mapElem) {
     }
 }
 
-function customRoute(customStart, customEnd) {
+function customRoute(customStart, customEnd, callback) {
     if ((customStart && customEnd) || (start.value && start.value.length > 0 && end.value && end.value.length > 0)) {
         var request = {
             origin: customStart || start.value,
@@ -79,7 +79,7 @@ function customRoute(customStart, customEnd) {
             travelMode: 'DRIVING' // May or may not have luck with street view this way
         };
 
-        getRoute(request);
+        getRoute(request, callback);
     }
 }
 
@@ -149,7 +149,7 @@ function getPosition() {
 
 function checkSphere(index) {
     // Only update when on vr
-    if (!start && !end) {
+    if (!start && !end && typeof updateSphere !== "undefined") {
         if (currentSphere != index) {
             currentSphere = index;
             updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
@@ -160,7 +160,7 @@ function checkSphere(index) {
     }
 }
 
-function getRoute(request) {
+function getRoute(request, callback) {
     for (var i = 0; i < markers.length; i++) {
         markers[i].setMap(null);
         markers[i] = null;
@@ -280,6 +280,8 @@ function getRoute(request) {
             // }
             // s = s.substring(0, s.length - 1);
             // console.log(s);
+
+            if (callback) callback();
         }
     });
 }
