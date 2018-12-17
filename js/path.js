@@ -1,45 +1,58 @@
-var currentSphere = 12;
-var canvas;
-var context;
-var width;
-var height;
+const tailPoints = 7;
 
-customRoute("22 E Dayton St, Madison, WI", "424 W Mifflin St, Madison, WI", initPath);
+// Testing page state
+var pathSphere = 0;
+var pathCanvas;
+var pathContext;
 
-function initPath(size) {
-    canvas = document.createElement("canvas");
-    context = canvas.getContext("2d");
-    canvas.style.border = "1px solid black";
-    document.body.appendChild(canvas);
-
-    width = size || 256;
-    height = size || 256;
-    canvas.width = width;
-    canvas.height = height;
-
-    drawPath(context);
+// Only run when on testing page
+if (!document.getElementById("vr")) {
+    customRoute("22 E Dayton St, Madison, WI", "424 W Mifflin St, Madison, WI", initPath);
 }
 
-window.onkeyup = function (e) { checkKey(e); }
+function initPath(size) {
+    // Init canvas
+    pathCanvas = document.createElement("canvas");
+    pathContext = pathCanvas.getContext("2d");
+    pathCanvas.style.border = "1px solid black";
+    document.body.appendChild(pathCanvas);
+
+    pathCanvas.width = size || 256;
+    pathCanvas.height = size || 256;
+
+    // Set up key handler
+    window.onkeyup = function (e) { checkKey(e); }
+
+    // Draw current state
+    update();
+}
 
 function checkKey(e) {
     e = e || window.event;
 
     if (e.keyCode == '90') { // Z
-        currentSphere = clamp(currentSphere - 1, 0, road.length - 1);
-        drawPath(context);
+        pathSphere = clamp(pathSphere - 1, 0, road.length - 1);
+        update();
     } else if (e.keyCode == '88') { // X
-        currentSphere = clamp(currentSphere + 1, 0, road.length - 1);
-        drawPath(context);
+        pathSphere = clamp(pathSphere + 1, 0, road.length - 1);
+        update();
     }
 }
 
-function drawPath(ctx) {
-    const section = road.slice(Math.max(0, currentSphere - 11), currentSphere + 12);
-    const current = road[currentSphere];
+function update() {
+    drawPath(pathContext, pathSphere);
+}
 
-    // Magic number based on real life testing, basically a zoom 
-    const maxBounds = 0.003;
+function drawPath(ctx, sphere) {
+    const width = ctx.canvas.width;
+    const height = ctx.canvas.height;
+
+    // Get the current portion of the route to look at
+    const section = road.slice(Math.max(0, sphere - tailPoints), sphere + tailPoints + 1);
+    const current = road[sphere];
+
+    // Magic number based on real life testing, this is the zoom factor
+    const maxBounds = tailPoints / 4000;
 
     // Clear previous transform
     ctx.setTransform(1, 0, 0, 1, 0, 0);
