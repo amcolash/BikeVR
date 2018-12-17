@@ -8,10 +8,6 @@ function assert(cond, text) {
     return true;
 }
 
-function hasVR() {
-    return ('getVRDisplays' in navigator);
-}
-
 function decodeParameters(querystring) {
     // remove any preceding url and split
     querystring = querystring.substring(querystring.indexOf('?') + 1).split('&');
@@ -72,12 +68,14 @@ function measureGeo(lat1, lon1, lat2, lon2) {
 // ---------------------------------- Canvas Functions --------------------------------
 
 // Shamelessly stolen from: https://codepen.io/ashblue/pen/fGkma
-function wrapCanvasText(text, fontSize, width, ctx) {
+function wrapCanvasText(text, fontSize, width) {
     var lines = [];
     var line = '';
     var lineTest = '';
     var words = text.split(' ');
 
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
     ctx.font = fontSize + 'px Arial';
 
     for (var i = 0, len = words.length; i < len; i++) {

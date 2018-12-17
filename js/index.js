@@ -1,5 +1,5 @@
 var container;
-var scene, sceneHUD, camera, cameraHUD, mesh1, mesh2, textureHUD, contextHUD, renderer, controls, stats, rendererStats;
+var scene, camera, mesh1, mesh2, renderer, controls, rendererStats, statsHUD, infoHUD;
 
 const perf = false;
 
@@ -17,9 +17,7 @@ const sphereRadius = 100;
 const verticalSphereSegments = 60;
 const horizontalSphereSegments = 90;
 
-// Movement offset
 const movementSpeed = 40;
-
 const alphaBlend = 0.05;
 
 var panoramas = {};
@@ -30,6 +28,9 @@ var hudInfo = {};
 var markers = [];
 
 var currentSphere = 0;
+
+var hasVR = false;
+navigator.getVRDisplays().then((devices) => { hasVR = devices.length > 0; });
 
 // progress = 17;
 
@@ -52,10 +53,6 @@ window.onload = function() {
 // Called after we have gotten a route with g-maps
 function init() {
     if (perf) console.time("init");
-
-    container = document.createElement('div');
-    // container.style.display = "none";
-    document.body.appendChild(container);
 
     scene = new THREE.Scene();
     sceneHUD = new THREE.Scene();
@@ -90,26 +87,27 @@ function init() {
 
     initInfo();
 
+    container = document.createElement('div');
+    // container.style.display = "none";
+    document.body.appendChild(container);
+
     renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.autoClear = false;
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 
-    stats = new Stats();
-    container.appendChild(stats.dom);
-
     rendererStats = new THREEx.RendererStats();
     rendererStats.domElement.style.position = 'absolute';
-    rendererStats.domElement.style.left = '0px';
-    rendererStats.domElement.style.top = '48px';
+    rendererStats.domElement.style.left = '8px';
+    rendererStats.domElement.style.top = '100px';
     document.body.appendChild(rendererStats.domElement);
-    
+
     var mapElem = document.getElementById('map');
     var playToggle = document.getElementById('playToggle');
     var mapToggle = document.getElementById('mapToggle');
 
-    if (hasVR()) {
+    if (hasVR) {
         document.body.appendChild(WEBVR.createButton(renderer, { frameOfReferenceType: 'eye-level' }));
         renderer.vr.enabled = true;
 
@@ -300,79 +298,26 @@ function resetCamera() {
 // Info: https://en.wikipedia.org/w/api.php?action=help&modules=query%2Bextracts
 // Endpoint: https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exsentences=5&exintro&explaintext&titles=Seattle
 function initInfo() {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    cameraHUD = new THREE.OrthographicCamera(
-        -width / 2, width / 2,
-        height / 2, -height / 2,
-        0, 30
-    );
-
-    hudInfo.canvas = document.createElement("canvas");
-    contextHUD = hudInfo.canvas.getContext('2d');
-
-    hudInfo.canvas.width = 1024;
-    hudInfo.canvas.height = 1024;
-
-    var geometry = new THREE.PlaneGeometry(width, height);
-    textureHUD = new THREE.CanvasTexture(hudInfo.canvas, { minFilter: THREE.LinearFilter });
-    var material = new THREE.MeshBasicMaterial({ map: textureHUD, transparent: true });
-
-    sceneHUD.add(new THREE.Mesh(geometry, material));
-
-    hudInfo.infoWidth = 400;
-    hudInfo.infoHeight = 250;
-    hudInfo.fontSize = 25;
+    hudInfo.infoWidth = 256;
+    hudInfo.infoHeight = 64;
+    hudInfo.fontSize = 18;
     hudInfo.updateSpeed = 2;
-    hudInfo.fps = 60;
-    hudInfo.frame = 16;
+    hudInfo.infoEnabled = false;
 
-    contextHUD.fillStyle = "rgba(255, 255, 255, 0.75)";
-    contextHUD.font = hudInfo.fontSize + 'px sans';
-    contextHUD.textBaseline = 'top';
+    if (hasVR) {
+        statsHUD = new StatsVR(scene, camera, 8, 8, 0, 9, -20);
+        infoHUD = new StatsVR(scene, camera, 15, 3.75, 0, -5, -20, hudInfo.infoWidth, hudInfo.infoHeight);
+    } else {
+        statsHUD = new StatsVR(scene, camera, 4, 4, -13.75, 11.8, -20);
+        infoHUD = new StatsVR(scene, camera, 15, 3.75, -8, -11.5, -20, hudInfo.infoWidth, hudInfo.infoHeight);
+    }
+
     const text = "Seattle ( ( listen) see-AT-\u0259l) is a seaport city on the west coast of the United States. It  is the seat of King County, Washington. With an estimated 730,000 residents as of  2018, Seattle is the largest city in both the state of Washington and the Pacific Northwest region of North America. According to U.S. Census data released in 2018, the Seattle metropolitan area\u2019s population stands at 3.87 million, and ranks as the 15th largest in the United States. In July 2013, it was the fastest-growing major city in the United States and remained in the Top 5 in May 2015 with an annual growth rate of 2.1%.";
-    hudInfo.lines = wrapCanvasText(text, hudInfo.fontSize, hudInfo.infoWidth, contextHUD);
+    setHUDInfo(text);
 }
 
-function updateInfo(index, counter, delta) {
-    return;
-    if (perf) console.time("updateInfo");
-
-    if (perf) console.time("updateInfo.info")
-    contextHUD.clearRect(hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight - hudInfo.fontSize, hudInfo.infoWidth, hudInfo.infoHeight + hudInfo.fontSize);
-    for (var i = index, len = hudInfo.lines.length; i < len; i++) {
-        if ((i - index) * hudInfo.fontSize < (hudInfo.infoHeight - hudInfo.fontSize)) {
-            var yValue = hudInfo.canvas.height - hudInfo.infoHeight + ((i - index) * hudInfo.fontSize) + -counter * hudInfo.fontSize;
-            contextHUD.fillText(hudInfo.lines[i], hudInfo.fontSize, yValue);
-        }
-    }
-    if (perf) console.timeEnd("updateInfo.info")
-
-    if (perf) console.time("updateInfo.stats")
-    // Average over past 30 samples
-    var samples = 15;
-
-    hudInfo.fps -= (hudInfo.fps / samples);
-    hudInfo.fps += ((1 / delta) / samples);
-    
-    hudInfo.frame -= (hudInfo.frame / samples);
-    hudInfo.frame += ((delta * 1000) / samples);
-
-    var offset = 250;
-    contextHUD.clearRect(hudInfo.canvas.width - offset, hudInfo.fontSize, offset, hudInfo.fontSize * 6);
-
-    contextHUD.fillText((hudInfo.fps).toFixed(0) + " fps", hudInfo.canvas.width - offset, hudInfo.fontSize);
-    contextHUD.fillText((hudInfo.frame).toFixed(0) + " ms", hudInfo.canvas.width - offset, hudInfo.fontSize * 2);
-    contextHUD.fillText(velocity.toFixed(1) + " km/hr", hudInfo.canvas.width - offset, hudInfo.fontSize * 4);
-
-    if (bluetoothStats) {
-        contextHUD.fillText(bluetoothStats.cadence.toFixed(1) + " rpm", hudInfo.canvas.width - offset, hudInfo.fontSize * 5);
-        contextHUD.fillText(bluetoothStats.distance.toFixed(1) + " km", hudInfo.canvas.width - offset, hudInfo.fontSize * 6);
-    }
-    if (perf) console.timeEnd("updateInfo.stats")
-
-    if (textureHUD) textureHUD.needsUpdate = true;
-    if (perf) console.timeEnd("updateInfo");
+function setHUDInfo(text) {
+    hudInfo.lines = wrapCanvasText(text, hudInfo.fontSize, hudInfo.infoWidth);
 }
 
 function getId(index) {
@@ -521,19 +466,25 @@ function onWindowResize() {
 
 var counter = 0;
 var index = 0;
-var blend = 2250;
+var buttonDebounce = 0;
 
-function render() {
-    var delta = clock.getDelta();
-    
-    // figure out velocity each frame
+function update(delta) {
+    // Figure out velocity
     velocity = autoMove ? 17 : 0;
     if (bluetoothStats) {
         velocity = bluetoothStats.speed;
-    } else if (renderer.vr.getDevice()) {
+    } else if (hasVR) {
         var gamepads = navigator.getGamepads();
         if (gamepads && gamepads[0] && gamepads[0].buttons) {
-            velocity = gamepads[0].buttons[0].touched ? 17 : 0;
+            var touched = gamepads[0].buttons[0].touched;
+            var pressed = gamepads[0].buttons[0].pressed;
+            velocity = touched ? 17 : 0;
+
+            var now = Date.now();
+            if (pressed && now > (buttonDebounce + 500)) {
+                hudInfo.enabled = !hudInfo.enabled;
+                buttonDebounce = now;
+            }
         }
     } else {
         if (keysDown["75"]) {
@@ -547,6 +498,7 @@ function render() {
         }
     }
 
+    // Move the spheres
     if (velocity !== 0 || true) {
         var mps = velocity * 1000 / 3600;
         progress = clamp(progress + delta * mps, 0, dist);
@@ -559,10 +511,13 @@ function render() {
         // This way we don't need angles to figure things out and things blend ok
         movement *= -currentSign * 0.9;
 
+        const blend = 2250;
         mesh1.position.set(movement, -1, 0);
-        // mesh2.position.set(sphereRadius * 0.375 * movementSpeed, -1, 0);
         mesh2.position.set(movement + blend, -1, 0);
     }
+
+    // Update mouse controls
+    controls.update(delta);
 
     if (sphereProgress > 1 - alphaBlend) {
         mesh1.material.uniforms.nextBlend.value = (1 - sphereProgress) * (1 / alphaBlend);
@@ -574,21 +529,39 @@ function render() {
         mesh2.visible = false;
     }
 
+    // Update HUDs
+    statsHUD.setCustom1(velocity.toFixed(1) + " km/hr");
+    if (bluetoothStats) {
+        statsHUD.setCustom2(bluetoothStats.cadence.toFixed(1) + " rpm");
+        statsHUD.setCustom3(bluetoothStats.distance.toFixed(1) + " km");
+    } else {
+        statsHUD.setCustom2(undefined);
+        statsHUD.setCustom3(undefined);
+        statsHUD.setCustom2("test2");
+        statsHUD.setCustom3("test3");
+    }
+
+    statsHUD.update();
+
     // Check if we need to update hud
-    // counter += delta;
-    // updateInfo(index, counter / hudInfo.updateSpeed, delta);
-    // if (counter > hudInfo.updateSpeed) {
-    //     counter = 0;
-    //     index = (index + 1) % hudInfo.lines.length;
-    // }
+    infoHUD.setEnabled(hudInfo.enabled);
+    if (hudInfo.enabled) {
+        counter += delta;
+        if (counter > hudInfo.updateSpeed) {
+            counter = 0;
+            index = (index + 1) % hudInfo.lines.length;
+        }
+        infoHUD.multilineText(hudInfo.lines, index);
+    }
+}
 
-    controls.update(delta);
+function render() {
+    var delta = clock.getDelta();
+    statsHUD.msStart();
 
+    update(delta);
     renderer.render(scene, camera);
-    
-    // Update stats here to profile the scene render, not the hud render
+
     rendererStats.update(renderer);
-    stats.update();
-    
-    // renderer.render(sceneHUD, cameraHUD);
+    statsHUD.msEnd();
 }
