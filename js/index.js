@@ -323,7 +323,7 @@ function initInfo() {
     hudInfo.infoWidth = 400;
     hudInfo.infoHeight = 250;
     hudInfo.fontSize = 25;
-    hudInfo.updateSpeed = 0.5;
+    hudInfo.updateSpeed = 2;
     hudInfo.fps = 60;
     hudInfo.frame = 16;
 
@@ -336,9 +336,9 @@ function initInfo() {
 
 function updateInfo(index, counter, delta) {
     return;
-    if (perf || true) console.time("updateInfo");
+    if (perf) console.time("updateInfo");
 
-    console.time("updateInfo.info")
+    if (perf) console.time("updateInfo.info")
     contextHUD.clearRect(hudInfo.fontSize, hudInfo.canvas.height - hudInfo.infoHeight - hudInfo.fontSize, hudInfo.infoWidth, hudInfo.infoHeight + hudInfo.fontSize);
     for (var i = index, len = hudInfo.lines.length; i < len; i++) {
         if ((i - index) * hudInfo.fontSize < (hudInfo.infoHeight - hudInfo.fontSize)) {
@@ -346,9 +346,9 @@ function updateInfo(index, counter, delta) {
             contextHUD.fillText(hudInfo.lines[i], hudInfo.fontSize, yValue);
         }
     }
-    console.timeEnd("updateInfo.info")
+    if (perf) console.timeEnd("updateInfo.info")
 
-    console.time("updateInfo.stats")
+    if (perf) console.time("updateInfo.stats")
     // Average over past 30 samples
     var samples = 15;
 
@@ -369,10 +369,10 @@ function updateInfo(index, counter, delta) {
         contextHUD.fillText(bluetoothStats.cadence.toFixed(1) + " rpm", hudInfo.canvas.width - offset, hudInfo.fontSize * 5);
         contextHUD.fillText(bluetoothStats.distance.toFixed(1) + " km", hudInfo.canvas.width - offset, hudInfo.fontSize * 6);
     }
-    console.timeEnd("updateInfo.stats")
+    if (perf) console.timeEnd("updateInfo.stats")
 
-    // if (textureHUD) textureHUD.needsUpdate = true;
-    if (perf || true) console.timeEnd("updateInfo");
+    if (textureHUD) textureHUD.needsUpdate = true;
+    if (perf) console.timeEnd("updateInfo");
 }
 
 function getId(index) {
@@ -576,8 +576,8 @@ function render() {
 
     // Check if we need to update hud
     // counter += delta;
+    // updateInfo(index, counter / hudInfo.updateSpeed, delta);
     // if (counter > hudInfo.updateSpeed) {
-    //     updateInfo(index, counter / hudInfo.updateSpeed, delta);
     //     counter = 0;
     //     index = (index + 1) % hudInfo.lines.length;
     // }
@@ -585,10 +585,10 @@ function render() {
     controls.update(delta);
 
     renderer.render(scene, camera);
-
+    
     // Update stats here to profile the scene render, not the hud render
     rendererStats.update(renderer);
     stats.update();
-
+    
     // renderer.render(sceneHUD, cameraHUD);
 }
