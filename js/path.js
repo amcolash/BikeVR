@@ -35,22 +35,8 @@ function checkKey(e) {
 }
 
 function drawPath(ctx) {
-    let bounds = new google.maps.LatLngBounds();
-    let section = road.slice(Math.max(0, currentSphere - 11), currentSphere + 12);
-    for (let i = 0; i < section.length; i++) {
-        bounds.extend(section[i]);
-    }
-
+    const section = road.slice(Math.max(0, currentSphere - 11), currentSphere + 12);
     const current = road[currentSphere];
-    
-    // const northEast = bounds.getNorthEast();
-    // const southWest = bounds.getSouthWest();
-
-    // const center = bounds.getCenter();
-
-    // const pathWidth = Math.abs(northEast.lng() - southWest.lng()) + 0.0002;
-    // const pathHeight = Math.abs(southWest.lat() - northEast.lat()) + 0.0002;
-    // const maxBounds = Math.max(pathWidth, pathHeight);
 
     // Magic number based on real life testing, basically a zoom 
     const maxBounds = 0.003;
@@ -58,13 +44,16 @@ function drawPath(ctx) {
     // Clear previous transform
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
+    // Clean up and transform canvas
     ctx.clearRect(0, 0, width, height);
     ctx.translate(width / 2, -height / 2);
 
+    // Start with the path
     ctx.beginPath();
     ctx.lineWidth = width / 100;
     ctx.strokeStyle = "green";
 
+    // A bit of duplicated code between this and below, consider refactor someday
     for (i = 0; i < section.length; i++) {
         let subtracted = subtractGeo(current, section[i]);
         let x = (subtracted.lng() / maxBounds) * width;
@@ -74,8 +63,10 @@ function drawPath(ctx) {
         ctx.lineTo(x, y);
     }
 
+    // Actually render
     ctx.stroke();
 
+    // Draw waypoint circles
     for (i = 0; i < section.length; i++) {
         let isCurrent = section[i].lat() === current.lat() && section[i].lng() === current.lng();
         let subtracted = subtractGeo(current, section[i]);
