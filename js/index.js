@@ -14,8 +14,8 @@ const wireframe = false;
 
 // Sphere setup
 const sphereRadius = 100;
-const verticalSphereSegments = 60;
-const horizontalSphereSegments = 90;
+const verticalSphereSegments = 70;
+const horizontalSphereSegments = 100;
 
 const movementSpeed = 40;
 const alphaBlend = 0.05;
@@ -469,23 +469,19 @@ var index = 0;
 var buttonDebounce = 0;
 
 function update(delta) {
+    // Get gamepad state
+    var gamepads = navigator.getGamepads();
+    if (gamepads && gamepads[0] && gamepads[0].buttons) {
+        var touched = gamepads[0].buttons[0].touched;
+        var pressed = gamepads[0].buttons[0].pressed;
+    }
+
     // Figure out velocity
     velocity = autoMove ? 17 : 0;
     if (bluetoothStats) {
         velocity = bluetoothStats.speed;
     } else if (hasVR) {
-        var gamepads = navigator.getGamepads();
-        if (gamepads && gamepads[0] && gamepads[0].buttons) {
-            var touched = gamepads[0].buttons[0].touched;
-            var pressed = gamepads[0].buttons[0].pressed;
-            velocity = touched ? 17 : 0;
-
-            var now = Date.now();
-            if (pressed && now > (buttonDebounce + 500)) {
-                hudInfo.enabled = !hudInfo.enabled;
-                buttonDebounce = now;
-            }
-        }
+        if (!autoMove) velocity = touched ? 17 : 0;
     } else {
         if (keysDown["75"]) {
             velocity = Math.max(0, velocity - 0.5); // key K
@@ -496,6 +492,13 @@ function update(delta) {
         } else if (keysDown["77"]) {
             velocity = 17; // key M
         }
+    }
+
+    // Disable hud if needed
+    var now = Date.now();
+    if (pressed && now > (buttonDebounce + 500)) {
+        hudInfo.enabled = !hudInfo.enabled;
+        buttonDebounce = now;
     }
 
     // Move the spheres
