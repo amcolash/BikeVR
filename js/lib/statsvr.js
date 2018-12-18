@@ -14,7 +14,7 @@
      * https://seanwasere.com/
      */
 
-    var StatsVR = (function (scene, camera, planeWidth, planeHeight, x, y, z, canvasWidth, canvasHeight) {
+    var StatsVR = (function (anchor, planeWidth, planeHeight, x, y, z, canvasWidth, canvasHeight) {
         var canvas = document.createElement('canvas');
         // document.body.appendChild(canvas);
         canvas.width = canvasWidth || 128;
@@ -34,7 +34,7 @@
         statsPlane.position.z = z || -5;
         statsPlane.renderOrder = 9999;
 
-        camera.add(statsPlane);
+        anchor.add(statsPlane);
         
         var timer = (performance || Date);
         var statsDisplayRefreshDelay  = 100;
@@ -62,6 +62,15 @@
             },
             setZ: function (val) {
                 statsPlane.position.z = val;
+            },
+            setXRotation: function(val) {
+                statsPlane.rotation.x = val;
+            },
+            setYRotation: function(val) {
+                statsPlane.rotation.y = val;
+            },
+            setZRotation: function(val) {
+                statsPlane.rotation.z = val;
             },
             setWidth: function (width) {
                 canvas.width = width;
