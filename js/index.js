@@ -357,9 +357,9 @@ function initInfo() {
         pathHUD = new StatsVR(cameraRig, 9, 9, -25, 0, -20.2, pathCanvas.width, pathCanvas.height);
         pathHUD.setYRotation(0.95);
     } else {
-        statsHUD = new StatsVR(camera, 4, 4, -13.75, 11.8, -20);
-        infoHUD = new StatsVR(camera, 15, 3.75, -8, -11.5, -20.1, hudInfo.infoWidth, hudInfo.infoHeight);
-        pathHUD = new StatsVR(camera, 4, 4, -13.5, -11.5, -20.2, pathCanvas.width, pathCanvas.height);
+        statsHUD = new StatsVR(cameraRig, 4, 4, -13.75, 11.8, -20);
+        infoHUD = new StatsVR(cameraRig, 15, 3.75, -8, -11.5, -20.1, hudInfo.infoWidth, hudInfo.infoHeight);
+        pathHUD = new StatsVR(cameraRig, 4, 4, -13.5, -11.5, -20.2, pathCanvas.width, pathCanvas.height);
     }
 
     const text = "Seattle ( ( listen) see-AT-\u0259l) is a seaport city on the west coast of the United States. It  is the seat of King County, Washington. With an estimated 730,000 residents as of  2018, Seattle is the largest city in both the state of Washington and the Pacific Northwest region of North America. According to U.S. Census data released in 2018, the Seattle metropolitan area\u2019s population stands at 3.87 million, and ranks as the 15th largest in the United States. In July 2013, it was the fastest-growing major city in the United States and remained in the Top 5 in May 2015 with an annual growth rate of 2.1%.";
