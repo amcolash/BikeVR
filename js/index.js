@@ -1,9 +1,12 @@
 var container;
-var scene, cameraRig, camera, mesh1, mesh2, renderer, controls, rendererStats;
+var scene, camera, renderer, controls, rendererStats;
 var statsHUD, infoHUD, pathHUD, pathCanvas, pathContext;
+var mesh1, mesh2, cameraRig, bikeRig, pedalRig;
 
 const perf = false;
 
+const manager = new THREE.LoadingManager();
+const loader = new THREE.GLTFLoader(manager);
 const clock = new THREE.Clock();
 
 const streetViewService = new google.maps.StreetViewService();
@@ -11,7 +14,7 @@ const panoWorker = new Worker("/js/pano_worker.js");
 const depthWorker = new Worker("/js/depth_worker.js");
 
 // Draw wireframes
-const wireframe = false;
+const wireframe = true;
 
 // Sphere setup
 const sphereRadius = 100;
@@ -56,18 +59,18 @@ function init() {
     if (perf) console.time("init");
 
     scene = new THREE.Scene();
-    sceneHUD = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 20000);
 
     // Add in a rig so that the base rotation of the camera can be set in vr
     cameraRig = new THREE.Object3D();
+    cameraRig.position.set(0, -80, 0);
     cameraRig.rotation.set(0, -Math.PI / 2, 0);
     cameraRig.add(camera);
     scene.add(cameraRig);
 
     controls = new THREE.FirstPersonControls(camera);
     controls.lookSpeed = 1.25;
-    controls.movementSpeed = 300;
+    controls.movementSpeed = 5;
     controls.lookVertical = true;
     // controls.constrainVertical = true;
     controls.verticalMin = 1.0;
@@ -85,6 +88,26 @@ function init() {
     mesh2 = new THREE.Mesh(geo, mat2);
     mesh2.frustumCulled = false;
     scene.add(mesh2);
+
+    // Load bike model
+    loader.load('/res/bike.glb', (gltf) => {
+        // Make a rig for the bike, offset a bit below the camera
+        bikeRig = new THREE.Group();
+        bikeRig.position.set(0, -15, 0);
+        cameraRig.add(bikeRig);
+
+        // Add meshes to the rig, make new material
+        const material = new THREE.MeshBasicMaterial({ color: "red" });
+        gltf.scene.traverse(child => {
+            if (child.isMesh) {
+                const clone = child.clone();
+                clone.material = material;
+                bikeRig.add(clone.clone());
+            }
+        });
+    }, undefined, (error) => {
+        console.error(error);
+    } );
 
     initInfo();
 
@@ -293,7 +316,6 @@ function createMaterial() {
 }
 
 function resetCamera() {
-    camera.position.set(0, -80, 0);
     camera.rotation.set(0, 0, 0);
     camera.updateProjectionMatrix();
 }
@@ -579,6 +601,22 @@ function update(delta) {
         }
         infoHUD.multilineText(hudInfo.lines, index);
     }
+    
+    // assume 50rpm at 17km/h if no bluetooth
+    var cadence = bluetoothStats ? bluetoothStats.cadence : (50/17) * velocity;
+    pedalSpeed = cadence / 60 * delta;
+    pedalSpeed = 0.1;
+
+    // Spin both pedals
+    bikeRig.traverse(child => {
+        // console.log(child)
+        if (child.name === "pedal-left" || child.name === "pedal-right") {
+            child.rotation.set((child.rotation.x - pedalSpeed) % (Math.PI * 2), 0, 0);
+        }
+    });
+
+    // pedalRig.children[0].rotation.set((pedalRig.children[0].rotation.x - pedalSpeed) % (Math.PI * 2), 0, 0);
+    // pedalRig.children[1].rotation.set((pedalRig.children[1].rotation.x - pedalSpeed) % (Math.PI * 2), 0, 0);
 }
 
 function render() {

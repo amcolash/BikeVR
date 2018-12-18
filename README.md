@@ -17,3 +17,6 @@ This project uses a ton of useful stuff from others including:
 - epoly (LINK TODO)
 - hidden (LINK TODO)
 - stats (LINK TODO)
+
+- icons from feather icons
+- [3D Bike Model](http://impression3d.laposte.fr/en/3d-model/game/bicycle-bike)
