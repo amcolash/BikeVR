@@ -14,7 +14,7 @@ const panoWorker = new Worker("/js/pano_worker.js");
 const depthWorker = new Worker("/js/depth_worker.js");
 
 // Draw wireframes
-const wireframe = true;
+const wireframe = false;
 
 // Sphere setup
 const sphereRadius = 100;
@@ -63,18 +63,22 @@ function init() {
 
     // Add in a rig so that the base rotation of the camera can be set in vr
     cameraRig = new THREE.Object3D();
-    cameraRig.position.set(0, -80, 0);
+    cameraRig.position.set(0, -200, 0);
     cameraRig.rotation.set(0, -Math.PI / 2, 0);
-    cameraRig.add(camera);
+    if (hasVR) {
+        cameraRig.add(camera);
+    } else {
+        camera.position.copy(cameraRig.position);
+    }
     scene.add(cameraRig);
 
     controls = new THREE.FirstPersonControls(camera);
     controls.lookSpeed = 1.25;
-    controls.movementSpeed = 5;
+    controls.movementSpeed = 300;
     controls.lookVertical = true;
-    // controls.constrainVertical = true;
-    controls.verticalMin = 1.0;
-    controls.verticalMax = 2.0;
+    controls.constrainVertical = false;
+    controls.verticalMin = 3.0;
+    controls.verticalMax = 0.0;
     controls.autoSpeedFactor = 0.5;
 
     // Make main geo
@@ -93,16 +97,25 @@ function init() {
     loader.load('/res/bike.glb', (gltf) => {
         // Make a rig for the bike, offset a bit below the camera
         bikeRig = new THREE.Group();
-        bikeRig.position.set(0, -15, 0);
+
+        // The funny part is that this bike just looks like the right size since it is up close to the camera
+        const scale = 75;
+        bikeRig.scale.set(scale, scale, scale);
+        bikeRig.position.set(0, -110, 15);
         cameraRig.add(bikeRig);
 
         // Add meshes to the rig, make new material
-        const material = new THREE.MeshBasicMaterial({ color: "red" });
+        const material = new THREE.MeshBasicMaterial({
+            color: "#339933",
+            depthTest: false,
+            transparent: true,
+            opacity: 0.4
+        });
         gltf.scene.traverse(child => {
             if (child.isMesh) {
                 const clone = child.clone();
                 clone.material = material;
-                bikeRig.add(clone.clone());
+                bikeRig.add(clone);
             }
         });
     }, undefined, (error) => {
@@ -308,14 +321,15 @@ function createMaterial() {
         side: THREE.DoubleSide,
         wireframe: wireframe,
         blending: THREE.NormalBlending,
-        depthTest: false,
-        transparent: true
+        depthTest: true,
+        transparent: false
     });
     mat.needsUpdate = true;
     return mat;
 }
 
 function resetCamera() {
+    camera.position.copy(cameraRig.position);
     camera.rotation.set(0, 0, 0);
     camera.updateProjectionMatrix();
 }
@@ -571,10 +585,20 @@ function update(delta) {
         mesh1.material.uniforms.nextBlend.value = (1 - sphereProgress) * (1 / alphaBlend);
         mesh2.material.uniforms.nextBlend.value = 1 - ((1 - sphereProgress) * (1 / alphaBlend));
         mesh2.visible = true;
+
+        mesh1.material.depthTest = false;
+        mesh2.material.depthTest = false;
+        mesh1.material.transparent = true;
+        mesh2.material.transparent = true;
     } else {
         mesh1.material.uniforms.nextBlend.value = 1;
         mesh2.material.uniforms.nextBlend.value = 0;
         mesh2.visible = false;
+
+        mesh1.material.depthTest = true;
+        mesh2.material.depthTest = true;
+        mesh1.material.transparent = false;
+        mesh2.material.transparent = false;
     }
 
     // Update HUDs
@@ -602,10 +626,9 @@ function update(delta) {
         infoHUD.multilineText(hudInfo.lines, index);
     }
     
-    // assume 50rpm at 17km/h if no bluetooth
+    // assume 60rpm at 17km/h if no bluetooth, multiply by two to make it act like rpm
     var cadence = bluetoothStats ? bluetoothStats.cadence : (50/17) * velocity;
-    pedalSpeed = cadence / 60 * delta;
-    pedalSpeed = 0.1;
+    pedalSpeed = (cadence / 60) * delta * (Math.PI * 2);
 
     // Spin both pedals
     bikeRig.traverse(child => {
