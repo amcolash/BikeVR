@@ -64,7 +64,7 @@ function drawPath(ctx, sphere) {
     // Start with the path
     ctx.beginPath();
     ctx.lineWidth = width / 100;
-    ctx.strokeStyle = "green";
+    ctx.strokeStyle = "white";
 
     // A bit of duplicated code between this and below, consider refactor someday
     for (i = 0; i < section.length; i++) {
@@ -88,7 +88,7 @@ function drawPath(ctx, sphere) {
 
         ctx.beginPath();
         ctx.arc(x, y, width / 73, 0, 2 * Math.PI, false);
-        ctx.fillStyle = isCurrent ? 'blue' : 'green';
+        ctx.fillStyle = isCurrent ? 'dimGray' : 'white';
         ctx.fill();
     }
 }

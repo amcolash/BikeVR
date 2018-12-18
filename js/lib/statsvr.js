@@ -180,6 +180,17 @@
                         ctx.fillText(lines[i], 2, (i + 1) * 16);
                     }
                 }
+            },
+
+            updateImage: function(newCanvas) {
+                var now = timer.now();
+                if (now > fpsLastTime + statsDisplayRefreshDelay) {
+                    texture.needsUpdate = true;
+                    fpsLastTime = now;
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(newCanvas, 0, 0);
+                }
             }
         };
     });
