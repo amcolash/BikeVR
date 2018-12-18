@@ -1,5 +1,6 @@
 var container;
-var scene, camera, mesh1, mesh2, renderer, controls, rendererStats, statsHUD, infoHUD;
+var scene, camera, mesh1, mesh2, renderer, controls, rendererStats;
+var statsHUD, infoHUD, pathHUD, pathCanvas, pathContext;
 
 const perf = false;
 
@@ -190,6 +191,9 @@ function initListeners() {
                     // update markers after everything has loaded
                     updateMarkers();
 
+                    // Draw first section of the path
+                    updatePath();
+
                     // Start the clock ticking
                     clock.getDelta();
 
@@ -304,12 +308,19 @@ function initInfo() {
     hudInfo.updateSpeed = 2;
     hudInfo.infoEnabled = false;
 
+    pathCanvas = document.createElement("canvas");
+    pathContext = pathCanvas.getContext("2d");
+    pathCanvas.width = 128;
+    pathCanvas.height = 128;
+
     if (hasVR) {
         statsHUD = new StatsVR(scene, camera, 8, 8, 0, 9, -20);
-        infoHUD = new StatsVR(scene, camera, 15, 3.75, 0, -5, -20, hudInfo.infoWidth, hudInfo.infoHeight);
+        infoHUD = new StatsVR(scene, camera, 15, 3.75, 0, -5, -21, hudInfo.infoWidth, hudInfo.infoHeight);
+        pathHUD = new StatsVR(scene, camera, 4, 4, 0, -6, -22, pathCanvas.width, pathCanvas.height);
     } else {
         statsHUD = new StatsVR(scene, camera, 4, 4, -13.75, 11.8, -20);
         infoHUD = new StatsVR(scene, camera, 15, 3.75, -8, -11.5, -20, hudInfo.infoWidth, hudInfo.infoHeight);
+        pathHUD = new StatsVR(scene, camera, 4, 4, -13.5, -11.5, -20, pathCanvas.width, pathCanvas.height);
     }
 
     const text = "Seattle ( ( listen) see-AT-\u0259l) is a seaport city on the west coast of the United States. It  is the seat of King County, Washington. With an estimated 730,000 residents as of  2018, Seattle is the largest city in both the state of Washington and the Pacific Northwest region of North America. According to U.S. Census data released in 2018, the Seattle metropolitan area\u2019s population stands at 3.87 million, and ranks as the 15th largest in the United States. In July 2013, it was the fastest-growing major city in the United States and remained in the Top 5 in May 2015 with an annual growth rate of 2.1%.";
@@ -387,6 +398,8 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
         info[oldId] = undefined;
     }
 
+    updatePath();
+
     resetCamera();
 
     // update markers
@@ -394,6 +407,13 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
 
     // Preload next sphere if needed
     if ((index + 1) < road.length) loadIndex(index + 1);
+}
+
+function updatePath() {
+    if (pathCanvas && pathContext) {
+        drawPath(pathContext, currentSphere);
+        pathHUD.updateImage(pathCanvas);
+    }
 }
 
 function updateNextPano(nextPanoId) {
@@ -477,7 +497,7 @@ function update(delta) {
     }
 
     // Figure out velocity
-    velocity = autoMove ? 17 : 0;
+    // velocity = autoMove ? 17 : 0;
     if (bluetoothStats) {
         velocity = bluetoothStats.speed;
     } else if (hasVR) {

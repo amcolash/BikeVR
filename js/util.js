@@ -2,6 +2,7 @@
 function assert(cond, text) {
     if (!cond) {
         console.assert(cond, text);
+        console.trace();
         return false;
     }
 
