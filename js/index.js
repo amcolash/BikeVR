@@ -165,7 +165,7 @@ function init() {
     playToggle.innerText = autoMove ? "||" : ">";
     playToggle.addEventListener('click', function (event) {
         autoMove = !autoMove;
-        velocity = autoMove ? 17 : 0;
+        velocity = autoMove ? defaultSpeed : 0;
         playToggle.innerText = autoMove ? "||" : ">";
     });
 
@@ -416,6 +416,8 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     }
     mesh1.rotation.set(0, rotation, 0);
 
+    if (!depthMaps[panoId]) console.error("Danger Will Robinson: Missing a depth map!");
+
     var depthMap = depthMaps[panoId];
     var texture = panoramas[panoId];
 
@@ -538,27 +540,27 @@ function update(delta) {
     }
 
     // Figure out velocity
-    velocity = autoMove ? 17 : 0;
     if (bluetoothStats) {
         velocity = bluetoothStats.speed;
-    } else if (hasVR) {
-        if (!autoMove) velocity = touched ? 17 : 0;
     } else {
         if (keysDown["75"]) {
             velocity = Math.max(0, velocity - 0.5); // key K
         } else if (keysDown["76"]) {
             velocity += 0.5; // key L
         } else if (keysDown["78"]) {
-            velocity = -17; // key N
+            velocity = -defaultSpeed; // key N
         } else if (keysDown["77"]) {
-            velocity = 17; // key M
+            velocity = defaultSpeed; // key M
+        } else if (!autoMove) {
+            velocity = 0;
         }
     }
 
     // Disable hud if needed
     var now = Date.now();
     if (pressed && now > (buttonDebounce + 500)) {
-        hudInfo.enabled = !hudInfo.enabled;
+        autoMove = !autoMove;
+        velocity = autoMove ? defaultSpeed : 0;
         buttonDebounce = now;
     }
 
@@ -629,7 +631,7 @@ function update(delta) {
     }
     
     // assume 60rpm at 17km/h if no bluetooth, multiply by two to make it act like rpm
-    var cadence = bluetoothStats ? bluetoothStats.cadence : (50/17) * velocity;
+    var cadence = bluetoothStats ? bluetoothStats.cadence : (50/defaultSpeed) * velocity;
     pedalSpeed = (cadence / 60) * delta * (Math.PI * 2);
 
     // Spin both pedals

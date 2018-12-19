@@ -8,7 +8,8 @@ var currPano;
 var currPos;
 
 var progress = 0; // in meters traveled
-var velocity = 17; // km/hr (about 10mph)
+const defaultSpeed = 17; // km/hr (about 10mph)
+var velocity = defaultSpeed;
 
 var currentSign = 1;
 var dist;
@@ -43,7 +44,7 @@ if (start && end && playToggle) {
     playToggle.textContent = autoMove ? "Autoplay: True" : "Autoplay: False";
     playToggle.addEventListener('click', function (event) {
         autoMove = !autoMove;
-        velocity = autoMove ? 17 : 0;
+        velocity = autoMove ? defaultSpeed : 0;
         playToggle.textContent = autoMove ? "Autoplay: True" : "Autoplay: False";
     });
 }
