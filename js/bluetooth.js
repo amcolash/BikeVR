@@ -12,7 +12,9 @@ const updateRatio = 0.85; // Percent ratio between old/new stats
 var characteristic, previousSample, currentSample, bluetoothStats, hasWheel, hasCrank, startDistance;
 var wheelSize = 2111;
 
-window.onload = updateWheel;
+if (logElement) {
+  window.onload = updateWheel;   
+}
 
 function updateWheel() {
     var rimElement = document.getElementById("rim");

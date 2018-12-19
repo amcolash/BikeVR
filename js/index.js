@@ -34,7 +34,9 @@ var markers = [];
 var currentSphere = 0;
 
 var hasVR = false;
-navigator.getVRDisplays().then((devices) => { hasVR = devices.length > 0; });
+if (navigator.getVRDisplays) {
+    navigator.getVRDisplays().then((devices) => { hasVR = devices.length > 0; });
+}
 
 // progress = 17;
 
