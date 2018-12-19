@@ -101,9 +101,9 @@ function init() {
         bikeRig = new THREE.Group();
 
         // The funny part is that this bike just looks like the right size since it is up close to the camera
-        const scale = 75;
+        const scale = 95;
         bikeRig.scale.set(scale, scale, scale);
-        bikeRig.position.set(0, -110, 15);
+        bikeRig.position.set(0, -130, 30);
         cameraRig.add(bikeRig);
 
         // Add meshes to the rig, make new material
@@ -426,7 +426,7 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     // Update next pano (most of the time will actually happen after load outside of here)
     updateNextPano(nextPanoId);
 
-    // Unload previous texture (only in prod?) Seems to be ok in dev even on "reload" of texture...
+    // Unload previous texture. Seems to be ok even on "reload" of texture...
     if (depthMaps[prevPanoId]) depthMaps[prevPanoId].dispose();
     if (panoramas[prevPanoId]) panoramas[prevPanoId].dispose();
 
