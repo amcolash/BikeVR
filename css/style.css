@@ -59,20 +59,20 @@ body {
 
 #route #map {
     width: 100%;
-    height: 440px;
+    height: calc(100vh - 13.4em);
     margin: 10px 0;
     border-radius: 4px;
 }
 
 @media screen and (min-width: 48em) {
     #route #map {
-        height: 750px;
+        height: calc(100vh - 10.6em);
     }
 }
 
 @media screen and (min-width: 1070px) {
     #route #map {
-        height: 790px;
+        height: calc(100vh - 8em);
     }
 }
 
