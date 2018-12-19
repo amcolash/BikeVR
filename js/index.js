@@ -13,6 +13,8 @@ const streetViewService = new google.maps.StreetViewService();
 const panoWorker = new Worker("/js/pano_worker.js");
 const depthWorker = new Worker("/js/depth_worker.js");
 
+var defaultDepthmap;
+
 // Draw wireframes
 const wireframe = false;
 
@@ -59,7 +61,24 @@ window.onload = function() {
 // Called after we have gotten a route with g-maps
 function init() {
     if (perf) console.time("init");
+    
+    // Setup dom
+    initDOM();
+    initListeners();
 
+    // Start scene
+    initScene();
+    loadBike();
+    initInfo();
+    initDefaultDepthMap();
+
+    // Start load
+    loadIndex(0);
+    
+    if (perf) console.timeEnd("init");
+}
+
+function initScene() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 20000);
 
@@ -95,6 +114,14 @@ function init() {
     mesh2.frustumCulled = false;
     scene.add(mesh2);
 
+    renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.autoClear = false;
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+}
+
+function loadBike() {
     // Load bike model
     loader.load('/res/bike.glb', (gltf) => {
         // Make a rig for the bike, offset a bit below the camera
@@ -122,26 +149,10 @@ function init() {
         });
     }, undefined, (error) => {
         console.error(error);
-    } );
+    });
+}
 
-    initInfo();
-
-    container = document.createElement('div');
-    // container.style.display = "none";
-    document.body.appendChild(container);
-
-    renderer = new THREE.WebGLRenderer({ antialias: false });
-    renderer.autoClear = false;
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    container.appendChild(renderer.domElement);
-
-    rendererStats = new THREEx.RendererStats();
-    rendererStats.domElement.style.position = 'absolute';
-    rendererStats.domElement.style.left = '20px';
-    rendererStats.domElement.style.top = '120px';
-    document.body.appendChild(rendererStats.domElement);
-
+function initDOM() {
     var mapElem = document.getElementById('map');
     var playToggle = document.getElementById('playToggle');
     var mapToggle = document.getElementById('mapToggle');
@@ -155,7 +166,10 @@ function init() {
         mapToggle.innerText = "+";
     }
 
-    // controls.enabled = true;
+    container = document.createElement('div');
+    // container.style.display = "none";
+    document.body.appendChild(container);
+
     container.addEventListener('click', function (event) {
         // Ask the browser to lock the pointer
         document.body.requestPointerLock();
@@ -184,10 +198,11 @@ function init() {
 
     window.addEventListener('resize', onWindowResize, false);
 
-    initListeners();
-    loadIndex(0);
-    
-    if (perf) console.timeEnd("init");
+    rendererStats = new THREEx.RendererStats();
+    rendererStats.domElement.style.position = 'absolute';
+    rendererStats.domElement.style.left = '20px';
+    rendererStats.domElement.style.top = '120px';
+    document.body.appendChild(rendererStats.domElement);
 }
 
 function initListeners() {
@@ -277,6 +292,27 @@ function handleAfterLoad() {
         sphereAfterLoad = 0;
         changeSphere(tmpValue);
     }
+}
+
+function initDefaultDepthMap() {
+    var img = document.getElementById("defaultDepthmap");
+
+    var newCanvas = document.createElement('canvas');
+    var context = newCanvas.getContext('2d');
+
+    //set dimensions
+    newCanvas.width = img.width;
+    newCanvas.height = img.height;
+
+    //apply the old canvas to the new one
+    context.drawImage(img, 0, 0);
+
+    // Connect the image to the Texture
+    const texture = new THREE.CanvasTexture(newCanvas);
+    texture.minFilter = THREE.LinearFilter;
+
+    // cache the texture
+    defaultDepthmap = texture;
 }
 
 function makeTexture(panoId, canvas) {
@@ -416,9 +452,7 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     }
     mesh1.rotation.set(0, rotation, 0);
 
-    if (!depthMaps[panoId]) console.error("Danger Will Robinson: Missing a depth map!");
-
-    var depthMap = depthMaps[panoId];
+    var depthMap = depthMaps[panoId] || defaultDepthmap;
     var texture = panoramas[panoId];
 
     // // Assign new textures
@@ -473,7 +507,7 @@ function updateNextPano(nextPanoId) {
         mesh2.rotation.set(0, mesh1.rotation.y, 0);
     }
 
-    mesh2.material.uniforms.displace.value = depthMaps[nextPanoId];
+    mesh2.material.uniforms.displace.value = depthMaps[nextPanoId] || defaultDepthmap;
     mesh2.material.uniforms.texture.value = panoramas[nextPanoId];
 }
 
