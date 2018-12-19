@@ -22,7 +22,8 @@
         canvas.style.paddingLeft = "100px";
         var ctx = canvas.getContext('2d');
 
-        const font = "18px Calibri";
+        const fontLarge = "18px Calibri";
+        const fontSmall = "14px Calibri";
 
         var texture = new THREE.Texture(canvas);
         var material = new THREE.MeshBasicMaterial({ map: texture, depthTest: false, transparent: true });
@@ -97,7 +98,7 @@
             },
             msEnd: function (val) {
                 msEnd = timer.now();
-                ms = (((msEnd - msStart) * 100) / 100).toFixed(2);
+                ms = (((msEnd - msStart) * 100) / 100);
             },
 
             add: function (object3d) {
@@ -115,12 +116,15 @@
                 if (now > fpsLastTime + statsDisplayRefreshDelay) {
                     texture.needsUpdate = true;
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.font = font;
+                    ctx.font = fontLarge;
                     ctx.lineWidth = 2;
+
+                    ctx.fillStyle = "#333";
+                    ctx.fillRect(0, 0, 128, 32);
 
                     //FPS
                     fpsLastTime = now;
-                    var FPS = ((((fpsFrames * 1000) / dt) * 100) / 100).toFixed(2);
+                    var FPS = ((((fpsFrames * 1000) / dt) * 100) / 100);
                     fpsFrames = 0;
 
                     fpsGraphData.push(FPS);
@@ -138,7 +142,13 @@
                     }
 
                     ctx.fillStyle = "#00cc00";
-                    ctx.fillText(FPS, 2, 26);
+                    ctx.fillText(FPS.toFixed(1), 2, 26);
+
+                    // Min/max
+                    ctx.font = fontSmall;
+                    ctx.fillText(Math.max(...fpsGraphData).toFixed(0), 45, 12);
+                    ctx.fillText(Math.min(...fpsGraphData).toFixed(0), 45, 26);
+                    ctx.font = fontLarge;
 
                     //MS
                     if (msActive) {
@@ -155,7 +165,13 @@
                             ctx.stroke();
                         }
                         ctx.fillStyle = "#ffffff";
-                        ctx.fillText(ms, 66, 26);
+                        ctx.fillText(ms.toFixed(1), 66, 26);
+
+                        // Min/max
+                        ctx.font = fontSmall;
+                        ctx.fillText(Math.max(...msGraphData).toFixed(1), 105, 12);
+                        ctx.fillText(Math.min(...msGraphData).toFixed(1), 105, 26);
+                        ctx.font = fontLarge;
                     }
 
                     //Custom
@@ -179,7 +195,7 @@
                     fpsLastTime = now;
 
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.font = font;
+                    ctx.font = fontLarge;
                     ctx.fillStyle = "#ffffff";
 
                     var lines = text.length ? text : text.split("\n");
