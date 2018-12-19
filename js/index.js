@@ -70,15 +70,15 @@ function initRoute() {
 function init() {
     if (perf) console.time("init");
     
-    // Setup dom
-    initDOM();
-    initListeners();
-
     // Start scene
     initScene();
     loadBike();
     initInfo();
     initDefaultDepthMap();
+
+    // Setup dom
+    initDOM();
+    initListeners();
 
     // Start load
     loadIndex(0);
@@ -121,6 +121,10 @@ function initScene() {
     mesh2 = new THREE.Mesh(geo, mat2);
     mesh2.frustumCulled = false;
     scene.add(mesh2);
+
+    container = document.createElement('div');
+    // container.style.display = "none";
+    document.body.appendChild(container);
 
     renderer = new THREE.WebGLRenderer({ antialias: false });
     renderer.autoClear = false;
@@ -173,10 +177,6 @@ function initDOM() {
         if (mapElem) mapElem.classList = "hidden";
         mapToggle.innerText = "+";
     }
-
-    container = document.createElement('div');
-    // container.style.display = "none";
-    document.body.appendChild(container);
 
     container.addEventListener('click', function (event) {
         // Ask the browser to lock the pointer
