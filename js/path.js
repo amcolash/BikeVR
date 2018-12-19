@@ -61,13 +61,13 @@ function drawPath(ctx, sphere) {
     ctx.clearRect(0, 0, width, height);
     ctx.translate(width / 2, -height / 2);
 
-    ctx.fillStyle = "darkSlateGray";
+    ctx.fillStyle = '#111';
     ctx.fillRect(-width/2, height/2, width, height);
 
     // Start with the path
     ctx.beginPath();
     ctx.lineWidth = width / 35;
-    ctx.strokeStyle = "gray";
+    ctx.strokeStyle = 'darkSlateGray';
 
     // A bit of duplicated code between this and below, consider refactor someday
     for (i = 0; i < section.length; i++) {
@@ -91,7 +91,7 @@ function drawPath(ctx, sphere) {
 
         ctx.beginPath();
         ctx.arc(x, y, width / 35, 0, 2 * Math.PI, false);
-        ctx.fillStyle = isCurrent ? 'white' : 'gray';
+        ctx.fillStyle = isCurrent ? 'white' : 'darkSlateGray';
         ctx.fill();
     }
 }
