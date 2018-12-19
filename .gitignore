@@ -1,3 +1,4 @@
 js/apikey.js
 .firebase/
 server.pem
+firebase-debug.log

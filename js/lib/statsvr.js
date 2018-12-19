@@ -177,13 +177,13 @@
                     //Custom
                     ctx.fillStyle = "#ffffff";
                     if (custom1) {
-                        ctx.fillText(custom1, 0, 47);
+                        ctx.fillText(custom1, 0, 60);
                     }
                     if (custom2) {
-                        ctx.fillText(custom2, 0, 65);
+                        ctx.fillText(custom2, 0, 78);
                     }
                     if (custom3) {
-                        ctx.fillText(custom3, 0, 84);
+                        ctx.fillText(custom3, 0, 97);
                     }
                 }
             },

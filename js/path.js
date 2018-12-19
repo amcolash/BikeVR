@@ -61,7 +61,7 @@ function drawPath(ctx, sphere) {
     ctx.clearRect(0, 0, width, height);
     ctx.translate(width / 2, -height / 2);
 
-    ctx.fillStyle = '#111';
+    ctx.fillStyle = '#111515';
     ctx.fillRect(-width/2, height/2, width, height);
 
     // Start with the path

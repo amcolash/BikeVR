@@ -138,8 +138,8 @@ function init() {
 
     rendererStats = new THREEx.RendererStats();
     rendererStats.domElement.style.position = 'absolute';
-    rendererStats.domElement.style.left = '8px';
-    rendererStats.domElement.style.top = '100px';
+    rendererStats.domElement.style.left = '20px';
+    rendererStats.domElement.style.top = '120px';
     document.body.appendChild(rendererStats.domElement);
 
     var mapElem = document.getElementById('map');
@@ -611,10 +611,8 @@ function update(delta) {
         statsHUD.setCustom2(bluetoothStats.cadence.toFixed(1) + " rpm");
         statsHUD.setCustom3(bluetoothStats.distance.toFixed(1) + " km");
     } else {
-        statsHUD.setCustom2(undefined);
-        statsHUD.setCustom3(undefined);
-        statsHUD.setCustom2("test2");
-        statsHUD.setCustom3("test3");
+        statsHUD.setCustom2(((50 / defaultSpeed) * velocity).toFixed(0) + " rpm");
+        statsHUD.setCustom3((progress / 1000).toFixed(1) + " km");
     }
 
     statsHUD.update();
@@ -630,8 +628,8 @@ function update(delta) {
         infoHUD.multilineText(hudInfo.lines, index);
     }
     
-    // assume 60rpm at 17km/h if no bluetooth, multiply by two to make it act like rpm
-    var cadence = bluetoothStats ? bluetoothStats.cadence : (50/defaultSpeed) * velocity;
+    // assume 50rpm at 17km/h if no bluetooth, multiply by two to make it act like rpm
+    var cadence = bluetoothStats ? bluetoothStats.cadence : (50 / defaultSpeed) * velocity;
     pedalSpeed = (cadence / 60) * delta * (Math.PI * 2);
 
     // Spin both pedals
