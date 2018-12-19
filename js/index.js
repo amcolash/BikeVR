@@ -36,9 +36,6 @@ var markers = [];
 var currentSphere = 0;
 
 var hasVR = false;
-if (navigator.getVRDisplays) {
-    navigator.getVRDisplays().then((devices) => { hasVR = devices.length > 0; });
-}
 
 // progress = 17;
 
@@ -48,6 +45,17 @@ var sphereAfterLoad = 0;
 var tmpVec2 = new THREE.Vector2();
 
 window.onload = function() {
+    if (navigator.getVRDisplays) {
+        navigator.getVRDisplays().then((devices) => {
+            hasVR = devices.length > 0;
+            initRoute();
+        });
+    } else {
+        initRoute();
+    }
+}
+
+function initRoute() {
     var params = decodeParameters(window.location.search);
     if (params.startLat && params.startLng && params.endLat && params.endLng) {
         var start = params.startLat + ", " + params.startLng;
