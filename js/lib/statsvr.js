@@ -53,6 +53,7 @@
         var custom1 = null;
         var custom2 = null;
         var custom3 = null;
+        var custom4 = null;
 
         return {
             setX: function (val) {
@@ -90,6 +91,9 @@
             },
             setCustom3: function (val) {
                 custom3 = val;
+            },
+            setCustom4: function (val) {
+                custom4 = val;
             },
 
             msStart: function (val) {
@@ -184,6 +188,9 @@
                     }
                     if (custom3) {
                         ctx.fillText(custom3, 0, 97);
+                    }
+                    if (custom4) {
+                        ctx.fillText(custom4, 0, 115);
                     }
                 }
             },

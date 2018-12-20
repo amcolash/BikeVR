@@ -649,6 +649,7 @@ function update(delta) {
 
     // Update HUDs
     statsHUD.setCustom1(velocity.toFixed(1) + " km/hr");
+    statsHUD.setCustom4("Sphere: " + currentSphere);
     if (bluetoothStats) {
         statsHUD.setCustom2(bluetoothStats.cadence.toFixed(1) + " rpm");
         statsHUD.setCustom3(bluetoothStats.distance.toFixed(1) + " km");
