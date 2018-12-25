@@ -84,14 +84,14 @@ function customRoute(customStart, customEnd, callback) {
     }
 }
 
-function defaultRoute() {
+function defaultRoute(callback) {
     var request = {
         origin: "40 E Dayton St, Madison, WI",
         destination: "1 W Dayton St, Madison WI",
         travelMode: 'DRIVING' // May or may not have luck with street view this way
     };
 
-    getRoute(request);
+    getRoute(request, callback);
 }
 
 function startRoute() {
@@ -211,12 +211,6 @@ function getRoute(request, callback) {
             }
 
             if (startButton) startButton.disabled = false;
-
-            // start things up (for the rendering/strret view side) after we have loaded the path
-            if (typeof init === "function") {
-                // default behavior in vr mode
-                init();
-            }
             
             // Show map
             if (currPano) currPano.setMap(null);

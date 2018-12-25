@@ -23,6 +23,7 @@ const sphereRadius = 100;
 const verticalSphereSegments = 70;
 const horizontalSphereSegments = 100;
 
+const bluetoothSlowdown = 0.75;
 const movementSpeed = 40;
 const alphaBlend = 0.05;
 
@@ -35,8 +36,6 @@ var markers = [];
 
 var currentSphere = 0;
 
-var hasVR = false;
-
 // progress = 17;
 
 // If this is set to +1 or -1, update sphere after loading accordingly. This helps going backwards
@@ -44,26 +43,34 @@ var sphereAfterLoad = 0;
 
 var tmpVec2 = new THREE.Vector2();
 
-window.onload = function() {
-    if (navigator.getVRDisplays) {
-        navigator.getVRDisplays().then((devices) => {
-            hasVR = devices.length > 0;
-            initRoute();
-        });
-    } else {
-        initRoute();
-    }
-}
+// Load things up
+window.onload = initRoute;
 
 function initRoute() {
     var params = decodeParameters(window.location.search);
     if (params.startLat && params.startLng && params.endLat && params.endLng) {
         var start = params.startLat + ", " + params.startLng;
         var end = params.endLat + ", " + params.endLng;
-        customRoute(start, end);
+        customRoute(start, end, initRenderer);
     } else {
-        defaultRoute();
+        defaultRoute(initRenderer);
     }
+}
+
+
+// Init renderer and create vr button (if needed), then call init
+function initRenderer() {
+    container = document.createElement('div');
+    // container.style.display = "none";
+    document.body.appendChild(container);
+
+    renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.autoClear = false;
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    document.body.appendChild(WEBVR.createButton(renderer, { callback: init }));
 }
 
 // Called after we have gotten a route with g-maps
@@ -94,10 +101,10 @@ function initScene() {
     cameraRig = new THREE.Object3D();
     cameraRig.position.set(0, -200, 0);
     cameraRig.rotation.set(0, -Math.PI / 2, 0);
-    if (hasVR) {
+    if (WEBVR.hasVR) {
         cameraRig.add(camera);
     } else {
-        camera.position.copy(cameraRig.position);
+       camera.position.copy(cameraRig.position);
     }
     scene.add(cameraRig);
 
@@ -121,16 +128,6 @@ function initScene() {
     mesh2 = new THREE.Mesh(geo, mat2);
     mesh2.frustumCulled = false;
     scene.add(mesh2);
-
-    container = document.createElement('div');
-    // container.style.display = "none";
-    document.body.appendChild(container);
-
-    renderer = new THREE.WebGLRenderer({ antialias: false });
-    renderer.autoClear = false;
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    container.appendChild(renderer.domElement);
 }
 
 function loadBike() {
@@ -169,15 +166,15 @@ function initDOM() {
     var playToggle = document.getElementById('playToggle');
     var mapToggle = document.getElementById('mapToggle');
 
-    if (hasVR) {
-        document.body.appendChild(WEBVR.createButton(renderer, { frameOfReferenceType: 'eye-level' }));
-        renderer.vr.enabled = true;
+    // if (hasVR) {
+    //     document.body.appendChild(WEBVR.createButton(renderer, { frameOfReferenceType: 'eye-level' }));
+    //     renderer.vr.enabled = true;
 
-        // Hide map on mobile by default
-        if (mapElem) mapElem.classList = "hidden";
-        mapToggle.innerText = "+";
-    }
-
+    //     // Hide map on mobile by default
+    //     if (mapElem) mapElem.classList = "hidden";
+    //     mapToggle.innerText = "+";
+    // }
+    
     container.addEventListener('click', function (event) {
         // Ask the browser to lock the pointer
         document.body.requestPointerLock();
@@ -375,7 +372,12 @@ function createMaterial() {
 }
 
 function resetCamera() {
-    camera.position.copy(cameraRig.position);
+    if (WEBVR.hasVR) {
+        camera.position.set(0, 0, 0);
+    } else {
+        camera.position.copy(cameraRig.position);
+    }
+
     camera.rotation.set(0, 0, 0);
     camera.updateProjectionMatrix();
 }
@@ -388,14 +390,14 @@ function initInfo() {
     hudInfo.infoHeight = 64;
     hudInfo.fontSize = 18;
     hudInfo.updateSpeed = 2;
-    hudInfo.enabled = hasVR;
+    hudInfo.enabled = WEBVR.hasVR;
 
     pathCanvas = document.createElement("canvas");
     pathContext = pathCanvas.getContext("2d");
     pathCanvas.width = 128;
     pathCanvas.height = 128;
 
-    if (hasVR) {
+    if (WEBVR.hasVR) {
         statsHUD = new StatsVR(cameraRig, 8, 8, 0, 13, -20);
         statsHUD.setXRotation(0.5);
         infoHUD = new StatsVR(cameraRig, 30, 7.5, 40, 0, -20.1, hudInfo.infoWidth, hudInfo.infoHeight);
@@ -583,7 +585,7 @@ function update(delta) {
 
     // Figure out velocity
     if (bluetoothStats) {
-        velocity = bluetoothStats.speed;
+        velocity = bluetoothStats.speed * bluetoothSlowdown;
     } else {
         if (keysDown["75"]) {
             velocity = Math.max(0, velocity - 0.5); // key K

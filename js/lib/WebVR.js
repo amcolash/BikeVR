@@ -6,6 +6,7 @@
  */
 
 var WEBVR = {
+	hasVR: true,
 
 	createButton: function ( renderer, options ) {
 
@@ -36,6 +37,7 @@ var WEBVR = {
 
 			renderer.vr.setDevice( device );
 
+			if (options && options.callback) options.callback();
 		}
 
 		function showEnterXR( device ) {
@@ -47,9 +49,10 @@ var WEBVR = {
 				session.addEventListener( 'end', onSessionEnded );
 
 				renderer.vr.setSession( session );
-				button.textContent = 'EXIT VR';
+				button.textContent = 'EXIT XR';
 
 				currentSession = session;
+				session.depthFar = 100000;
 
 			}
 
@@ -58,7 +61,7 @@ var WEBVR = {
 				currentSession.removeEventListener( 'end', onSessionEnded );
 
 				renderer.vr.setSession( null );
-				button.textContent = 'ENTER VR';
+				button.textContent = 'ENTER XR';
 
 				currentSession = null;
 
@@ -72,7 +75,7 @@ var WEBVR = {
 			button.style.left = 'calc(50% - 50px)';
 			button.style.width = '100px';
 
-			button.textContent = 'ENTER VR';
+			button.textContent = 'ENTER XR';
 
 			button.onmouseenter = function () { button.style.opacity = '1.0'; };
 			button.onmouseleave = function () { button.style.opacity = '0.5'; };
@@ -93,11 +96,12 @@ var WEBVR = {
 
 			renderer.vr.setDevice( device );
 
+			if (options && options.callback) options.callback();
 		}
 
 		function showVRNotFound() {
 
-			button.style.display = '';
+			button.style.display = 'none';
 
 			button.style.cursor = 'auto';
 			button.style.left = 'calc(50% - 75px)';
@@ -112,6 +116,8 @@ var WEBVR = {
 
 			renderer.vr.setDevice( null );
 
+			WEBVR.hasVR = false;
+			if (options && options.callback) options.callback();
 		}
 
 		function stylizeElement( element ) {
@@ -207,6 +213,9 @@ var WEBVR = {
 			message.style.textDecoration = 'none';
 
 			stylizeElement( message );
+
+			WEBVR.hasVR = false;
+			if (options && options.callback) options.callback();
 
 			return message;
 
