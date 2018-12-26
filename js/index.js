@@ -34,9 +34,13 @@ var info = {};
 var hudInfo = {};
 var markers = [];
 
-var currentSphere = 0;
+// Approximate progress which actually sets starting sphere based on starting point
+// This should be ok in most cases, but might be a bit off.
+var startingSphere = 0;
+progress = startingSphere * 25;
 
-// progress = 17;
+// The current sphere is purely a convienience reference and does not change state (mostly)
+var currentSphere = startingSphere;
 
 // If this is set to +1 or -1, update sphere after loading accordingly. This helps going backwards
 var sphereAfterLoad = 0;
@@ -88,7 +92,7 @@ function init() {
     initListeners();
 
     // Start load
-    loadIndex(0);
+    loadIndex(startingSphere);
     
     if (perf) console.timeEnd("init");
 }
@@ -236,13 +240,13 @@ function initListeners() {
             }
 
             if (sphereAfterLoad === 0) {
-                if (getIndex(panoId) === 0) {
-                    loadIndex(1);
+                if (getIndex(panoId) === startingSphere) {
+                    loadIndex(startingSphere + 1);
                     return;
                 }
 
                 // Init after loading first sphere
-                if (getIndex(panoId) === 1) {
+                if (getIndex(panoId) === startingSphere + 1) {
                     // show 1st sphere
                     updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
 
