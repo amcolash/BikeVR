@@ -10,8 +10,8 @@ const loader = new THREE.GLTFLoader(manager);
 const clock = new THREE.Clock();
 
 const streetViewService = new google.maps.StreetViewService();
-const panoWorker = new Worker("/js/pano_worker.js");
-const depthWorker = new Worker("/js/depth_worker.js");
+const panoWorker = new Worker("/js/workers/pano_worker.js");
+const depthWorker = new Worker("/js/workers/depth_worker.js");
 
 var defaultDepthmap;
 
