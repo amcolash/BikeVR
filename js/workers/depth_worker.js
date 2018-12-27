@@ -34,5 +34,5 @@ function onDepthLoad(depthMap) {
     }
 
     context.putImageData(image, 0, 0);
-    postMessage({panoId: depthMap.panoId, canvas: canvas.transferToImageBitmap()});
+    postMessage({panoId: depthMap.panoId, imageBitmap: canvas.transferToImageBitmap()});
 }

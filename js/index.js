@@ -221,16 +221,13 @@ function initListeners() {
         info[e.data.panoId] = e.data.info;
 
         // Keep track of this texture
-        makeTexture(e.data.panoId, e.data.imageBitmap);
+        makeTexture(e.data.panoId, e.data.imageBitmap, false);
 
+        // Get the depth bitmap
         depthWorker.postMessage({panoId: e.data.panoId});
         depthWorker.onmessage = function(e) {
             const panoId = e.data.panoId;
-            const workerCanvas = e.data.canvas;
-
-            const texture = new THREE.CanvasTexture(workerCanvas);
-            texture.minFilter = THREE.LinearFilter;
-            depthMaps[panoId] = texture;
+            makeTexture(panoId, e.data.imageBitmap, true);
 
             if (!assert(Object.keys(panoramas).length == Object.keys(depthMaps).length, { "message": "panoramas and depthMaps have different lengths",
                 "panoramas.length": Object.keys(panoramas).length, "depthMaps.length": Object.keys(depthMaps).length })) {
@@ -322,7 +319,7 @@ function initDefaultDepthMap() {
     defaultDepthmap = texture;
 }
 
-function makeTexture(panoId, canvas) {
+function makeTexture(panoId, canvas, depthMap) {
     if (perf) console.time("makeTexture");
 
     var newCanvas = document.createElement('canvas');
@@ -340,7 +337,11 @@ function makeTexture(panoId, canvas) {
     texture.minFilter = THREE.LinearFilter;
 
     // cache the texture
-    panoramas[panoId] = texture;
+    if (depthMap) {
+        depthMaps[panoId] = texture;
+    } else {
+        panoramas[panoId] = texture;
+    }
 
     if (perf) console.timeEnd("makeTexture");
 }
