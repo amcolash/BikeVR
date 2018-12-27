@@ -1,24 +1,25 @@
 importScripts("/js/lib/GSVPanoDepth.js", "/js/lib/pako_inflate.min.js");
 
 const depthLoader = new GSVPANO.PanoDepthLoader();
+const canvas = new OffscreenCanvas(1, 1);
+const context = canvas.getContext('2d');
 
 onmessage = function(e) {
     depthLoader.load(e.data.panoId);
 
     depthLoader.onDepthLoad = function() {
-        onDepthLoad(this.depthMap, e.data.canvas);
+        onDepthLoad(this.depthMap);
     };
 }
 
-function onDepthLoad(depthMap, canvas) {
-    var x, y, context, image, c;
+function onDepthLoad(depthMap) {
+    var x, y, image, c;
 
     var w = depthMap.width;
     var h = depthMap.height;
 
     canvas.width = w;
     canvas.height = h;
-    context = canvas.getContext('2d');
 
     image = context.getImageData(0, 0, w, h);
 
@@ -33,5 +34,5 @@ function onDepthLoad(depthMap, canvas) {
     }
 
     context.putImageData(image, 0, 0);
-    postMessage({panoId: depthMap.panoId});
+    postMessage({panoId: depthMap.panoId, canvas: canvas.transferToImageBitmap()});
 }

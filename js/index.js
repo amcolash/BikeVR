@@ -222,13 +222,10 @@ function initListeners() {
         // Keep track of this texture
         makeTexture(e.data.panoId, e.data.imageBitmap);
 
-        // Use web wroker to load the depth map
-        var workerCanvas = document.createElement("canvas");
-        var offscreen = workerCanvas.transferControlToOffscreen();
-        
-        depthWorker.postMessage({panoId: e.data.panoId, canvas: offscreen}, [offscreen]);
+        depthWorker.postMessage({panoId: e.data.panoId});
         depthWorker.onmessage = function(e) {
             const panoId = e.data.panoId;
+            const workerCanvas = e.data.canvas;
 
             const texture = new THREE.CanvasTexture(workerCanvas);
             texture.minFilter = THREE.LinearFilter;
