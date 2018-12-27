@@ -4,6 +4,7 @@ var statsHUD, infoHUD, pathHUD, pathCanvas, pathContext;
 var mesh1, mesh2, cameraRig, bikeRig, pedalRig;
 
 const perf = false;
+const hq = true;
 
 const manager = new THREE.LoadingManager();
 const loader = new THREE.GLTFLoader(manager);
@@ -281,9 +282,9 @@ function loadIndex(i) {
                     lng: location.lng()
                 };
 
-                panoWorker.postMessage({result: data, index: i});
+                panoWorker.postMessage({result: data, index: i, hq: hq});
             } else {
-                panoWorker.postMessage({result: undefined, index: i});
+                panoWorker.postMessage({result: undefined, index: i, hq: hq});
             }
         });
 

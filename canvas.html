@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Canvas Test</title>
+</head>
+<body>
+    <script>
+        const panoWorker = new Worker("/js/workers/pano_worker.js");
+        panoWorker.onmessage = function (e) {
+            const bitmap = e.data.imageBitmap;
+            panoCanvas.width = bitmap.width;
+            panoCanvas.height = bitmap.height;
+            panoContext.drawImage(bitmap, 0, 0);
+        }
+
+        const depthWorker = new Worker("/js/workers/depth_worker.js");
+        depthWorker.onmessage = function (e) {
+            const bitmap = e.data.canvas;
+            depthCanvas.width = bitmap.width;
+            depthCanvas.height = bitmap.height;
+            depthContext.drawImage(bitmap, 0, 0);
+        }
+
+        const panoCanvas = document.createElement("canvas");
+        const panoContext = panoCanvas.getContext("2d");
+        document.body.appendChild(panoCanvas);
+        
+        const depthCanvas = document.createElement("canvas");
+        const depthContext = depthCanvas.getContext("2d");
+        document.body.appendChild(depthCanvas);
+        
+        var data = {
+            rotation: 3.947483042627074,
+            panoId: "HWqg7p76EcMuUTmBaSfNZw",
+            lat: 43.076236685118914,
+            lng: -89.38608059905152
+        };
+        
+        panoWorker.postMessage({result: data, index: 0, hq: false});
+        depthWorker.postMessage({panoId: data.panoId});
+    </script>
+</body>
+</html>

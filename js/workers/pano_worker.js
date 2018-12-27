@@ -1,11 +1,10 @@
 importScripts("/js/lib/GSVPano.js");
 
-const hq = true;
 const panoLoader = new GSVPANO.PanoLoader();
-panoLoader.setZoom(hq ? 3 : 1 );
 panoLoader.onPanoramaLoad = onPanoramaLoad;
 
 onmessage = function(e) {
+    panoLoader.setZoom(e.data.hq ? 3 : 1);
     panoLoader.load(e.data.result, e.data.index);
 }
 
