@@ -7,15 +7,18 @@ var pathContext;
 
 // Only run when on testing page
 if (!document.getElementById("vr")) {
-    if (navigator.onLine) {
-        customRoute("22 E Dayton St, Madison, WI", "424 W Mifflin St, Madison, WI", initPath);
-    } else {
-        var tmpRoad = [{"lat":43.076393342559456,"lng":-89.3858602995258},{"lat":43.076236685118914,"lng":-89.38608059905152},{"lat":43.076082481337835,"lng":-89.3863040770907},{"lat":43.07592647936076,"lng":-89.38652524445058},{"lat":43.075770477383685,"lng":-89.38674641181046},{"lat":43.0756144754066,"lng":-89.3869675791704},{"lat":43.07545847342953,"lng":-89.38718874653034},{"lat":43.07530364323432,"lng":-89.38741143960397},{"lat":43.075149999102116,"lng":-89.38763567698612},{"lat":43.07499546167986,"lng":-89.38785869212592},{"lat":43.0748126965797,"lng":-89.38802865171016},{"lat":43.07459935377945,"lng":-89.38796935377945},{"lat":43.07443408556438,"lng":-89.38776152718731},{"lat":43.074270738564806,"lng":-89.3875505373129},{"lat":43.07410739156523,"lng":-89.38733954743844},{"lat":43.0739463981688,"lng":-89.38753480244162},{"lat":43.07378937490682,"lng":-89.38775457893604},{"lat":43.07363310905696,"lng":-89.38797538937604},{"lat":43.073476843207104,"lng":-89.3881961998161},{"lat":43.07332171551206,"lng":-89.38841850515206},{"lat":43.07316672531388,"lng":-89.38864099108167},{"lat":43.07301173511571,"lng":-89.38886347701134},{"lat":43.072856744917544,"lng":-89.38908596294095},{"lat":43.07270175471937,"lng":-89.38930844887057},{"lat":43.0725467645212,"lng":-89.38953093480023},{"lat":43.07239177432303,"lng":-89.38975342072985},{"lat":43.07223678412486,"lng":-89.38997590665952},{"lat":43.07207999323036,"lng":-89.3901960094775},{"lat":43.07192298365436,"lng":-89.39041582288388}];
-        road = [];
-        for (var i = 0; i < tmpRoad.length; i++) {
-            road.push(new google.maps.LatLng(tmpRoad[i]));
-        }
-        initPath();
+    // Init service worker immediately
+    if (navigator.serviceWorker) {
+        navigator.serviceWorker.register('service_worker.js')
+        .then(function(registration) {
+            console.log('Service worker registration successful, scope is:', registration.scope);
+
+            // Init route after we are all set
+            customRoute("22 E Dayton St, Madison, WI", "424 W Mifflin St, Madison, WI", initPath);
+        })
+        .catch(function(error) {
+            console.log('Service worker registration failed, error:', error);
+        });
     }
 }
 
@@ -68,10 +71,31 @@ function drawPath(ctx, sphere) {
 
     // Clean up and transform canvas
     ctx.clearRect(0, 0, width, height);
-    ctx.translate(width / 2, -height / 2);
+    ctx.translate(width / 2, height / 2);
+
+    // Rotate to always point north
+    for (var i = 0; i < section.length; i++) {
+        let isCurrent = section[i].lat() === current.lat() && section[i].lng() === current.lng();
+        if (isCurrent) {
+            var h = 0;
+
+            // if (i < section.length - 1) {
+            //     console.log(section[i], section[i+1]);
+            //     h = google.maps.geometry.spherical.computeHeading(section[i], section[i + 1]);
+            // } else {
+            //     console.log(section[i-1], section[i]);
+            //     h = google.maps.geometry.spherical.computeHeading(section[i - 1], section[i]);
+            // }
+
+            // console.log(h);
+
+            ctx.rotate(h.toRad());
+            break;
+        }
+    }
 
     ctx.fillStyle = '#111515';
-    ctx.fillRect(-width/2, height/2, width, height);
+    ctx.fillRect(-width, -height, width * 2, height * 2);
 
     // Start with the path
     ctx.beginPath();
@@ -82,7 +106,7 @@ function drawPath(ctx, sphere) {
     for (i = 0; i < section.length; i++) {
         let subtracted = subtractGeo(current, section[i]);
         let x = (subtracted.lng() / maxBounds) * width;
-        let y = (1 - (subtracted.lat() / maxBounds)) * height;
+        let y = (1 - (subtracted.lat() / maxBounds)) * height - height;
 
         if (i === 0) ctx.moveTo(x, y);
         ctx.lineTo(x, y);
@@ -96,7 +120,7 @@ function drawPath(ctx, sphere) {
         let isCurrent = section[i].lat() === current.lat() && section[i].lng() === current.lng();
         let subtracted = subtractGeo(current, section[i]);
         let x = (subtracted.lng() / maxBounds) * width;
-        let y = (1 - (subtracted.lat() / maxBounds)) * height;
+        let y = (1 - (subtracted.lat() / maxBounds)) * height - height;
 
         ctx.beginPath();
         ctx.arc(x, y, width / 35, 0, 2 * Math.PI, false);
