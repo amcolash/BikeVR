@@ -46,13 +46,7 @@ var info = {};
 var hudInfo = {};
 var markers = [];
 
-// Approximate progress which actually sets starting sphere based on starting point
-// This should be ok in most cases, but might be a bit off.
-var startingSphere = 0;
-progress = startingSphere * 25;
-
-// The current sphere is purely a convienience reference and does not change state (mostly)
-var currentSphere = startingSphere;
+var startingSphere, currentSphere;
 
 // If this is set to +1 or -1, update sphere after loading accordingly. This helps going backwards
 var sphereAfterLoad = 0;
@@ -64,6 +58,12 @@ window.onload = initRoute;
 
 function initRoute() {
     var params = decodeParameters(window.location.search);
+    
+    // Setup start spehere
+    startingSphere = params.startingSphere || 0;
+    progress = startingSphere * 25;
+    currentSphere = startingSphere;
+
     if (params.startLat && params.startLng && params.endLat && params.endLng) {
         var start = params.startLat + ", " + params.startLng;
         var end = params.endLat + ", " + params.endLng;
@@ -181,6 +181,20 @@ function initDOM() {
     var mapElem = document.getElementById('map');
     var playToggle = document.getElementById('playToggle');
     var mapToggle = document.getElementById('mapToggle');
+    var saveButton = document.getElementById("save");
+    var loadButton = document.getElementById("load");
+
+    saveButton.addEventListener('click', function(event) {
+        var params = decodeParameters(window.location.search);
+        if (currentSphere > 0) params.startingSphere = currentSphere;
+
+        window.localStorage.setItem("params", encodeParameters(params));
+    });
+
+    loadButton.addEventListener('click', function(event) {
+        const params = window.localStorage.getItem("params");
+        if (params) window.location.search = params;
+    });
 
     // if (hasVR) {
     //     document.body.appendChild(WEBVR.createButton(renderer, { frameOfReferenceType: 'eye-level' }));

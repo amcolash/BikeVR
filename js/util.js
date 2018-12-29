@@ -9,6 +9,19 @@ function assert(cond, text) {
     return true;
 }
 
+function encodeParameters(params) {
+    var query = "?";
+
+    const keys = Object.keys(params);
+    for (var i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        query += encodeURIComponent(key) + "=" + encodeURIComponent(params[key]);
+        if (i < keys.length - 1) query += "&";
+    }
+
+    return query;
+}
+
 function decodeParameters(querystring) {
     // remove any preceding url and split
     querystring = querystring.substring(querystring.indexOf('?') + 1).split('&');
