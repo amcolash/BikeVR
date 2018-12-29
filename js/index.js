@@ -120,18 +120,18 @@ function initScene() {
     if (WEBVR.hasVR) {
         cameraRig.add(camera);
     } else {
-       camera.position.copy(cameraRig.position);
+        camera.position.copy(cameraRig.position);
+
+        controls = new THREE.FirstPersonControls(camera);
+        controls.lookSpeed = 1.25;
+        controls.movementSpeed = 300;
+        controls.lookVertical = true;
+        controls.constrainVertical = false;
+        controls.verticalMin = 3.0;
+        controls.verticalMax = 0.0;
+        controls.autoSpeedFactor = 0.5;
     }
     scene.add(cameraRig);
-
-    controls = new THREE.FirstPersonControls(camera);
-    controls.lookSpeed = 1.25;
-    controls.movementSpeed = 300;
-    controls.lookVertical = true;
-    controls.constrainVertical = false;
-    controls.verticalMin = 3.0;
-    controls.verticalMax = 0.0;
-    controls.autoSpeedFactor = 0.5;
 
     // Make main geo
     var geo = new THREE.SphereBufferGeometry(sphereRadius, horizontalSphereSegments, verticalSphereSegments);
