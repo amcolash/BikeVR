@@ -2,12 +2,26 @@
 var CACHE = 'cache-and-update-1';
 
 // On install, cache some resources.
-self.addEventListener('install', function(evt) {
+self.addEventListener('install', event => {
     console.log('The service worker is being installed.');
+
+    // Wipe old caches
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+          return Promise.all(
+            cacheNames.filter(cacheName => {
+                return cacheName !== CACHE;
+            }).map(cacheName => {
+                console.log("Deleting old service worker cache", cacheName);
+                return caches.delete(cacheName);
+            })
+          );
+        })
+    );
 });
 
 // Try to open from cache, if missing fetch and then cache it
-self.addEventListener('fetch', function(event) {
+self.addEventListener('fetch', event => {
     const url = event.request.url;
 
     // If we are talking with google, cache things
