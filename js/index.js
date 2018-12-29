@@ -1,3 +1,14 @@
+// Init service worker immediately
+if (navigator.serviceWorker) {
+    navigator.serviceWorker.register('service_worker.js')
+    .then(function(registration) {
+        console.log('Registration successful, scope is:', registration.scope);
+    })
+    .catch(function(error) {
+        console.log('Service worker registration failed, error:', error);
+    });
+}
+
 var container;
 var scene, camera, renderer, controls, rendererStats;
 var statsHUD, infoHUD, pathHUD, pathCanvas, pathContext;
