@@ -77,19 +77,23 @@ function drawPath(ctx, sphere) {
     for (var i = 0; i < section.length; i++) {
         let isCurrent = section[i].lat() === current.lat() && section[i].lng() === current.lng();
         if (isCurrent) {
-            var h = 0;
+            var p1, p2;
+            if (i < section.length - 1) {
+                p1 = section[i];
+                p2 = section[i + 1];
+            } else {
+                p1 = section[i - 1];
+                p2 = section[i];
+            }
 
-            // if (i < section.length - 1) {
-            //     console.log(section[i], section[i+1]);
-            //     h = google.maps.geometry.spherical.computeHeading(section[i], section[i + 1]);
-            // } else {
-            //     console.log(section[i-1], section[i]);
-            //     h = google.maps.geometry.spherical.computeHeading(section[i - 1], section[i]);
-            // }
+            var dX = p2.lng() - p1.lng();
+            var dY = p2.lat() - p1.lat();
 
-            // console.log(h);
+            // Done this way since my map is not actually an acurate projection ;)
+            // If that gets fixed, change to maps.google.geometry.spherical.computeHeading(p1, p2);
+            var rotation = Math.atan2(dY, dX) - Math.PI / 2;
 
-            ctx.rotate(h.toRad());
+            ctx.rotate(rotation);
             break;
         }
     }
