@@ -655,7 +655,7 @@ function update(delta) {
     }
 
     // Update mouse controls
-    controls.update(delta);
+    if (controls) controls.update(delta);
 
     if (sphereProgress > 1 - alphaBlend) {
         mesh1.material.uniforms.nextBlend.value = (1 - sphereProgress) * (1 / alphaBlend);
