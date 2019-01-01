@@ -9,7 +9,7 @@ const UINT16_MAX = 65536;  // 2^16
 const UINT32_MAX = 4294967296;  // 2^32
 const updateRatio = 0.85; // Percent ratio between old/new stats
 
-var characteristic, previousSample, currentSample, bluetoothStats, hasWheel, hasCrank, startDistance;
+var characteristic, bluetoothDevice, previousSample, currentSample, bluetoothStats, hasWheel, hasCrank, startDistance;
 var wheelSize = 2111;
 
 if (logElement) {
@@ -32,26 +32,17 @@ function updateWheel() {
 }
 
 function handleButton() {
-    if (!characteristic) {
-        onStartButtonClick();
-    } else {
-        onStopButtonClick();
-    }
-}
-
-function onStartButtonClick() {
     let serviceUuid = "cycling_speed_and_cadence";
     let characteristicUuid = "csc_measurement";
 
-    // TODO: At some point look into auto-reconnect
-    // https://googlechrome.github.io/samples/web-bluetooth/automatic-reconnect.html
-
     log('Requesting Bluetooth Device...');
     navigator.bluetooth.requestDevice({filters: [{services: [serviceUuid]}]})
+    // navigator.bluetooth.requestDevice({acceptAllDevices: true})
         .then(device => {
             if (bluetoothInfo) bluetoothInfo.style.display = "block";
-            log('Connecting to GATT Server...');
-            return device.gatt.connect();
+            bluetoothDevice = device;
+            bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+            return connect();
         })
         .then(server => {
             log('Getting Service...');
@@ -65,31 +56,72 @@ function onStartButtonClick() {
             characteristic = c;
             return characteristic.startNotifications().then(_ => {
                 log('Notifications started');
-                characteristic.addEventListener('characteristicvaluechanged',
-                    handleNotifications);
+                characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
                 connectButton.innerText = "Disconnect";
             });
         })
         .catch(error => {
             log('Argh! ' + error);
+            cleanup();
         });
 }
 
-function onStopButtonClick() {
+function cleanup() {
+    log('Cleaning up');
+    if (bluetoothDevice) {
+        bluetoothDevice.removeEventListener('gattserverdisconnected', onDisconnected);
+        bluetoothDevice = undefined;
+    }
+
     if (characteristic) {
         characteristic.stopNotifications()
             .then(() => {
                 log('Notifications stopped');
-                characteristic.removeEventListener('characteristicvaluechanged',
-                    handleNotifications);
+                characteristic.removeEventListener('characteristicvaluechanged', handleNotifications);
                 characteristic = undefined;
                 bluetoothStats = undefined;
-                connectButton.innerText = "Connect";
             })
             .catch(error => {
                 log('Argh! ' + error);
             });
     }
+}
+
+// Auto reconnect code from: https://googlechrome.github.io/samples/web-bluetooth/automatic-reconnect.html
+function connect() {
+    exponentialBackoff(3 /* max retries */, 2 /* seconds delay */,
+      function toTry() {
+        log('Connecting to Bluetooth Device... ');
+        return bluetoothDevice.gatt.connect();
+      },
+      function success() {
+        log('Bluetooth Device connected');
+      },
+      function fail() {
+        log('Failed to reconnect');
+        cleanup();
+      });
+  }
+  
+function onDisconnected() {
+    log('Bluetooth Device disconnected');
+    connect();
+}
+  
+// This function keeps calling "toTry" until promise resolves or has
+// retried "max" number of times. First retry has a delay of "delay" seconds.
+// "success" is called upon success.
+function exponentialBackoff(max, delay, toTry, success, fail) {
+    toTry().then(result => success(result))
+    .catch(_ => {
+        if (max === 0) {
+            return fail();
+        }
+        log('Retrying in ' + delay + 's... (' + max + ' tries left)');
+        setTimeout(function() {
+            exponentialBackoff(--max, delay * 2, toTry, success, fail);
+        }, delay * 1000);
+    });
 }
 
 function log(message) {
