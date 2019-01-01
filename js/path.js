@@ -67,7 +67,7 @@ function drawPath(ctx, sphere) {
     const maxBounds = tailPoints / 4000;
 
     // Clear previous transform
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.resetTransform();
 
     // Clean up and transform canvas
     ctx.clearRect(0, 0, width, height);
@@ -131,4 +131,29 @@ function drawPath(ctx, sphere) {
         ctx.fillStyle = isCurrent ? 'white' : 'darkSlateGray';
         ctx.fill();
     }
+
+    // Clear previous transform
+    ctx.resetTransform();
+    ctx.translate(width / 2, height / 2);
+    
+    // Draw facing triangle
+    var scale = 8;
+    var triangle = [[-scale, 0], [0, scale * 1.5], [scale, 0]];
+
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+
+    for (i = 0; i < triangle.length; i++) {
+        var x = triangle[i][0];
+        var y = triangle[i][1];
+
+        var angle = Math.PI;
+        var newX = x * Math.cos(angle) - y * Math.sin(angle);
+        var newY = y * Math.cos(angle) + x * Math.sin(angle);
+        
+        if (i === 0) ctx.moveTo(newX, newY);
+        ctx.lineTo(newX, newY);
+    }
+
+    ctx.fill();
 }
