@@ -26,16 +26,24 @@ self.addEventListener('fetch', event => {
 
     // If we are talking with google, cache things
     if (url.indexOf("maps.google") !== -1) {
-        event.respondWith(
-            caches.open(CACHE).then(cache => {
-                return cache.match(event.request).then(response => {
-                    return response || fetch(event.request).then(response => {
+        if (navigator.onLine) {
+            event.respondWith(
+                caches.open(CACHE).then(cache => {
+                    return fetch(event.request).then(response => {
                         cache.put(event.request, response.clone());
                         return response;
-                    });
-                });
-            })
-        );
+                    })
+                })
+            );
+        } else {
+            event.respondWith(
+                caches.open(CACHE).then(cache => {
+                    return cache.match(event.request).then(response => {
+                        return response;
+                    })
+                })
+            );
+        }
     } else {
         // Nothing else is fetched from cache
         event.respondWith(
