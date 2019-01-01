@@ -1,4 +1,4 @@
-const vertexShader = `
+const vertexShader = /*glsl*/ `
 uniform sampler2D displace;			
 varying vec2 vUv;
 

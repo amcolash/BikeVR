@@ -1,4 +1,4 @@
-const fragmentShader = `
+const fragmentShader = /*glsl*/ `
 uniform sampler2D texture;
 uniform float nextBlend;
 
