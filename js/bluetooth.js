@@ -57,7 +57,6 @@ function handleButton() {
             return characteristic.startNotifications().then(_ => {
                 log('Notifications started');
                 characteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-                connectButton.innerText = "Disconnect";
             });
         })
         .catch(error => {

@@ -137,8 +137,12 @@ function drawPath(ctx, sphere) {
     ctx.translate(width / 2, height / 2);
     
     // Draw facing triangle
-    var scale = 8;
-    var triangle = [[-scale, 0], [0, scale * 1.5], [scale, 0]];
+    var triangleScale = width / 32;
+    var triangle = [
+        [-triangleScale, 0],
+        [0, triangleScale * 1.5],
+        [triangleScale, 0]
+    ];
 
     ctx.fillStyle = 'white';
     ctx.beginPath();

@@ -236,7 +236,7 @@ function initDOM() {
     rendererStats = new THREEx.RendererStats();
     rendererStats.domElement.style.position = 'absolute';
     rendererStats.domElement.style.left = '20px';
-    rendererStats.domElement.style.top = '120px';
+    rendererStats.domElement.style.top = '140px';
     document.body.appendChild(rendererStats.domElement);
 }
 
