@@ -29,14 +29,12 @@ function checkKey(e) {
 
 function changeSphere(increment) {
     var index = currentSphere + increment;
-    if (index < 0) {
-        index = Object.keys(panoramas).length - 1;
-    } else {
-        index = index % Object.keys(panoramas).length;
-    }
 
     // Bail if things are not loaded
-    if (!getId(index)) return;
+    if (!getId(index)) {
+        console.error("tried to call changeSphere, but sphere wasn't found", index);
+        return;
+    }
 
     progress = 0;
     for (var i = 0; i < index; i++) {

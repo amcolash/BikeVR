@@ -60,7 +60,7 @@ function initRoute() {
     var params = decodeParameters(window.location.search);
     
     // Setup start spehere
-    startingSphere = params.startingSphere || 0;
+    startingSphere = Number.parseInt(params.startingSphere || 0);
     progress = startingSphere * 25;
     currentSphere = startingSphere;
 
@@ -282,6 +282,9 @@ function initListeners() {
 
                     // start rendering
                     renderer.setAnimationLoop(render);
+
+                    // wipe starting sphere after inital load so that things are ok
+                    startingSphere = 0;
                 }
             }
 
