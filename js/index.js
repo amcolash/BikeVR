@@ -86,7 +86,7 @@ function initRenderer() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 
-    document.body.appendChild(WEBVR.createButton(renderer, { callback: init }));
+    document.body.appendChild(WEBVR.createButton(renderer, { callback: init, frameOfReferenceType: 'eye-level' }));
 }
 
 // Called after we have gotten a route with g-maps
@@ -118,6 +118,7 @@ function initScene() {
     cameraRig.position.set(0, -200, 0);
     cameraRig.rotation.set(0, -Math.PI / 2, 0);
     if (WEBVR.hasVR) {
+        renderer.vr.enabled = true;
         cameraRig.add(camera);
     } else {
         camera.position.copy(cameraRig.position);
