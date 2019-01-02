@@ -179,9 +179,7 @@ function loadBike() {
 }
 
 function initDOM() {
-    var mapElem = document.getElementById('map');
     var playToggle = document.getElementById('playToggle');
-    var mapToggle = document.getElementById('mapToggle');
     var saveButton = document.getElementById("save");
     var loadButton = document.getElementById("load");
 
@@ -197,15 +195,6 @@ function initDOM() {
         if (params) window.location.search = params;
     });
 
-    // if (hasVR) {
-    //     document.body.appendChild(WEBVR.createButton(renderer, { frameOfReferenceType: 'eye-level' }));
-    //     renderer.vr.enabled = true;
-
-    //     // Hide map on mobile by default
-    //     if (mapElem) mapElem.classList = "hidden";
-    //     mapToggle.innerText = "+";
-    // }
-    
     container.addEventListener('click', function (event) {
         // Ask the browser to lock the pointer
         document.body.requestPointerLock();
@@ -217,19 +206,6 @@ function initDOM() {
         autoMove = !autoMove;
         velocity = autoMove ? defaultSpeed : 0;
         playToggle.innerText = autoMove ? "||" : ">";
-    });
-
-    var mapToggle = document.getElementById("mapToggle");
-    mapToggle.addEventListener('click', function (event) {
-        if (mapToggle.innerText === "+") {
-            // show
-            mapElem.classList = "";
-            mapToggle.innerText = "-";
-        } else {
-            // hide
-            mapElem.classList = "hidden";
-            mapToggle.innerText = "+";
-        }
     });
 
     window.addEventListener('resize', onWindowResize, false);
@@ -270,9 +246,6 @@ function initListeners() {
                 if (getIndex(panoId) === startingSphere + 1) {
                     // show 1st sphere
                     updateSphere(getId(currentSphere), getId(currentSphere - 1), getId(currentSphere + 1));
-
-                    // update markers after everything has loaded
-                    updateMarkers();
 
                     // Draw first section of the path
                     updatePath();
@@ -451,23 +424,6 @@ function setHUDInfo(text) {
 }
 
 function getId(index) {
-    // if (!assert(typeof index == "number", { "message": "index provided is not a number", "index": index })) return;
-    // if (!assert(index < Object.keys(panoramas).length, {
-    //     "message": "index greater than panoramas.length",
-    //     "index": index,
-    //     "panoramas.length": Object.keys(panoramas).length
-    // })) { console.trace(); return };
-    // if (!assert(index < Object.keys(depthMaps).length, {
-    //     "message": "index greater than depthMaths.length",
-    //     "index": index,
-    //     "depthMaps.length": Object.keys(depthMaps).length
-    // })) { console.trace(); return };
-    // if (!assert(index < Object.keys(info).length, {
-    //     "message": "index greater than info.length",
-    //     "index": index,
-    //     "info.length": Object.keys(info).length
-    // })) { console.trace(); return };
-
     return Object.keys(info).filter(function(id) {
         if (info[id]) return info[id].index === index;
         return false;
@@ -518,11 +474,7 @@ function updateSphere(panoId, prevPanoId, nextPanoId) {
     }
 
     updatePath();
-
     resetCamera();
-
-    // update markers
-    updateMarkers();
 
     // Preload next sphere if needed
     if ((index + 1) < road.length) loadIndex(index + 1);
@@ -551,49 +503,6 @@ function updateNextPano(nextPanoId) {
 
     mesh2.material.uniforms.displace.value = depthMaps[nextPanoId] || defaultDepthmap;
     mesh2.material.uniforms.texture.value = panoramas[nextPanoId];
-}
-
-function updateMarkers() {
-    return;
-
-    if (markers.length === 0 || markers.length !== Object.keys(info).length) {
-        for (var i = 0; i < markers.length; i++) {
-            renderer.dispose(markers[i]);
-        }
-
-        markers = [];
-
-        var size = 8;
-        var marker = new THREE.BoxGeometry(size, size, size);
-        var material = new THREE.MeshPhongMaterial({ side: THREE.DoubleSide });
-
-        for (var i = 0; i < Object.keys(info).length; i++) {
-            var mesh = new THREE.Mesh(marker, material);
-            markers[i] = mesh;
-            scene.add(mesh);
-        }
-    }
-
-    var baseLat = info[getId(currentSphere)].lat;
-    var baseLng = info[getId(currentSphere)].lng;
-    for (var i = 0; i < markers.length; i++) {
-        var markerLat = info[getId(i)].lat;
-        var markerLng = info[getId(i)].lng;
-
-        var length = measure(baseLat, baseLng, markerLat, markerLng);
-
-        var diffLat = baseLat - markerLat;
-        var diffLng = baseLng - markerLng;
-
-        tmpVec.set(diffLng, diffLat, 0).normalize();
-
-        console.log("measure: " + length);
-
-        markers[i].position.x = length * tmpVec.x;
-        markers[i].position.z = length * tmpVec.y;
-
-        console.log("x: " + markers[i].position.x + ", z: " + markers[i].position.z);
-    }
 }
 
 function onWindowResize() {
@@ -716,9 +625,6 @@ function update(delta) {
             child.rotation.set((child.rotation.x - pedalSpeed) % (Math.PI * 2), 0, 0);
         }
     });
-
-    // pedalRig.children[0].rotation.set((pedalRig.children[0].rotation.x - pedalSpeed) % (Math.PI * 2), 0, 0);
-    // pedalRig.children[1].rotation.set((pedalRig.children[1].rotation.x - pedalSpeed) % (Math.PI * 2), 0, 0);
 }
 
 function render() {
