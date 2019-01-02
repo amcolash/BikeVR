@@ -515,6 +515,8 @@ function onWindowResize() {
 var counter = 0;
 var index = 0;
 var buttonDebounce = 0;
+var bikeWobbleDir = 1;
+var bikeWobbleMax = 0.007;
 
 function update(delta) {
     // Get gamepad state
@@ -616,7 +618,7 @@ function update(delta) {
     
     // assume 50rpm at 17km/h if no bluetooth, multiply by two to make it act like rpm
     var cadence = bluetoothStats ? bluetoothStats.cadence : (50 / defaultSpeed) * velocity;
-    pedalSpeed = (cadence / 60) * delta * (Math.PI * 2);
+    var pedalSpeed = (cadence / 60) * delta * (Math.PI * 2);
 
     // Spin both pedals
     bikeRig.traverse(child => {
@@ -625,6 +627,17 @@ function update(delta) {
             child.rotation.set((child.rotation.x - pedalSpeed) % (Math.PI * 2), 0, 0);
         }
     });
+
+    // A little bit of back and forth wobble to make things look even nicer ;)
+    bikeRig.rotation.set(0, 0, bikeRig.rotation.z + pedalSpeed * 0.005 * bikeWobbleDir);
+
+    if (bikeRig.rotation.z > bikeWobbleMax) {
+        bikeRig.rotation.set(0, 0, bikeWobbleMax)
+        bikeWobbleDir = -1;
+    } else if (bikeRig.rotation.z < -bikeWobbleMax) {
+        bikeRig.rotation.set(0, 0, -bikeWobbleMax)
+        bikeWobbleDir = 1;
+    }
 }
 
 function render() {
