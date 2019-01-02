@@ -409,6 +409,19 @@ function initInfo() {
         infoHUD.setYRotation(-1.2);
         pathHUD = new StatsVR(cameraRig, 9, 9, -25, 0, -20.2, pathCanvas.width, pathCanvas.height);
         pathHUD.setYRotation(0.95);
+
+        // Rotate reminder HUD
+        var rotateHUD = new StatsVR(cameraRig, 4, 4, 0, -6, 20, 128, 128);
+        statsHUD.setXRotation(-0.35);
+        rotateHUD.setYRotation(Math.PI);
+        var rotateCanvas = document.createElement("canvas");
+        var rotateContext = rotateCanvas.getContext("2d");
+        rotateCanvas.width = 128;
+        rotateCanvas.height = 128;
+    
+        var rotateImg = document.getElementById("rotateImage");
+        rotateContext.drawImage(rotateImg, 0, 0, 256, 256, 0, 0, 128, 128);
+        rotateHUD.updateImage(rotateCanvas);
     } else {
         statsHUD = new StatsVR(cameraRig, 4, 4, -13.75, 11.8, -20);
         infoHUD = new StatsVR(cameraRig, 15, 3.75, -8, -11.5, -20.1, hudInfo.infoWidth, hudInfo.infoHeight);

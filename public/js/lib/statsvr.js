@@ -40,7 +40,7 @@
         var timer = (performance || Date);
         var statsDisplayRefreshDelay  = 100;
 
-        var fpsLastTime = timer.now();
+        var fpsLastTime = 0;
         var fpsFrames = 0;
         var fpsGraphData = new Array(32).fill(0);
 
