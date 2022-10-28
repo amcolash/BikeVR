@@ -12,7 +12,7 @@ if (navigator.serviceWorker) {
 var container;
 var scene, camera, renderer, controls, rendererStats;
 var statsHUD, infoHUD, pathHUD, pathCanvas, pathContext;
-var mesh1, mesh2, cameraRig, bikeRig, pedalRig;
+var mesh1, mesh2, cameraRig, bikeRig, pedalRig, cube1, cube2;
 
 const perf = false;
 const hq = true;
@@ -145,6 +145,27 @@ function initScene() {
     mesh2 = new THREE.Mesh(geo, mat2);
     mesh2.frustumCulled = false;
     scene.add(mesh2);
+
+    // Add in upcoming sphere marker
+    var geo2 = new THREE.BoxBufferGeometry(25, 25, 25, 10, 10);
+    var mat3 = new THREE.MeshLambertMaterial( {color: 0x555555} );
+    cube1 = new THREE.Mesh(geo2, mat3);
+    scene.add(cube1);
+
+    cube2 = new THREE.Mesh(geo2, mat3);
+    scene.add(cube2);
+
+    // Add a light for the cube
+    var light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+    scene.add(light);
+
+    // White directional light at half intensity shining from the top.
+    // var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    // directionalLight.target = cube;
+    // scene.add( directionalLight );
+
+    var light1 = new THREE.AmbientLight(0x505050); // soft white light
+    scene.add(light1);
 }
 
 function loadBike() {
@@ -605,6 +626,9 @@ function update(delta) {
         mesh2.material.transparent = false;
     }
 
+    mesh1.visible = false;
+    mesh2.visible = false;
+
     // Update HUDs
     statsHUD.setCustom1(velocity.toFixed(1) + " km/hr");
     statsHUD.setCustom4("Sphere: " + currentSphere);
@@ -651,6 +675,14 @@ function update(delta) {
         bikeRig.rotation.set(0, 0, -bikeWobbleMax)
         bikeWobbleDir = 1;
     }
+
+    cube1.rotation.y = (cube1.rotation.y + 0.012) % Math.PI;
+    cube1.position.x = mesh1.position.x + 1400;
+    cube1.position.y = Math.sin(cube1.rotation.y * 4) * 20 + 200;
+
+    cube2.position.x = mesh1.position.x - 875;
+    cube2.rotation.y = (cube2.rotation.y + 0.012) % Math.PI;
+    cube2.position.y = Math.sin(cube2.rotation.y * 4) * 20 + 200;
 }
 
 function render() {
